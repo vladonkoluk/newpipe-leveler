@@ -11,16 +11,25 @@ import com.google.android.exoplayer2.C;
 import org.schabi.newpipe.R;
 
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Настройки выравнивания громкости из экрана «Видео и аудио». Один общий
  * {@link LoudnessLeveler.Params} на всё приложение: изменения применяются сразу,
  * даже во время воспроизведения.
+ *
+ * <p>Настройки перечитываются из SharedPreferences не чаще раза в 300 мс по запросу
+ * обработчика звука, а не через OnSharedPreferenceChangeListener: SharedPreferences держит
+ * слушателей по слабой ссылке, и в минифицированной сборке R8 убирал поле со слушателем
+ * (его только записывали), после чего слушатель собирался сборщиком мусора.</p>
  */
 public final class LevelerSettings {
+    private static final long REFRESH_NANOS = TimeUnit.MILLISECONDS.toNanos(300);
+
     private static LoudnessLeveler.Params params;
-    // слушатель хранится в поле: SharedPreferences держит слушателей по слабой ссылке
-    private static SharedPreferences.OnSharedPreferenceChangeListener listener;
+    private static Context appContext;
+    private static SharedPreferences prefs;
+    private static long lastRefreshNanos;
 
     private LevelerSettings() {
     }
@@ -28,14 +37,27 @@ public final class LevelerSettings {
     @NonNull
     public static synchronized LoudnessLeveler.Params getParams(@NonNull final Context context) {
         if (params == null) {
-            final Context app = context.getApplicationContext();
-            final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(app);
+            appContext = context.getApplicationContext();
+            prefs = PreferenceManager.getDefaultSharedPreferences(appContext);
             params = new LoudnessLeveler.Params();
-            apply(app, prefs);
-            listener = (p, key) -> apply(app, p);
-            prefs.registerOnSharedPreferenceChangeListener(listener);
+            lastRefreshNanos = System.nanoTime();
+            apply(appContext, prefs);
+        } else {
+            refreshIfStale();
         }
         return params;
+    }
+
+    /** Перечитывает настройки, если с прошлого раза прошло больше 300 мс. */
+    static synchronized void refreshIfStale() {
+        if (params == null) {
+            return;
+        }
+        final long now = System.nanoTime();
+        if (now - lastRefreshNanos >= REFRESH_NANOS) {
+            lastRefreshNanos = now;
+            apply(appContext, prefs);
+        }
     }
 
     private static void apply(@NonNull final Context c, @NonNull final SharedPreferences prefs) {

@@ -75,6 +75,7 @@ public final class LevelerAudioProcessor extends BaseAudioProcessor {
             output.flip();
             return;
         }
+        LevelerSettings.refreshIfStale(); // изменения настроек — прямо во время просмотра
         final int count = bytes / 2;
         if (samples.length < count) {
             samples = new short[count];
