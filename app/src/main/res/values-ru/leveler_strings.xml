@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Выравнивание громкости (NewPipe Leveler) -->
+<resources>
+    <string name="leveler_category_title">Выравнивание громкости</string>
+    <string name="leveler_enabled_title">Ровная громкость</string>
+    <string name="leveler_enabled_summary">Тихое громче, громкое тише — как ночной режим. Работает прямо в плеере, без задержки.</string>
+    <string name="leveler_strength_title">Сила выравнивания</string>
+    <string name="leveler_target_title">Уровень громкости</string>
+    <string name="leveler_max_boost_title">Усиление тихого</string>
+    <string name="leveler_ratio_title">Сжатие внезапно громкого</string>
+
+    <string name="leveler_strength_100" formatted="false">100% — всё на одном уровне</string>
+    <string name="leveler_strength_80" formatted="false">80%</string>
+    <string name="leveler_strength_60" formatted="false">60%</string>
+    <string name="leveler_strength_40" formatted="false">40% — мягко</string>
+    <string name="leveler_strength_0" formatted="false">0% — только между роликами</string>
+
+    <string name="leveler_target_m20">Тише (−20 LUFS)</string>
+    <string name="leveler_target_m18">−18 LUFS</string>
+    <string name="leveler_target_m16">Обычно (−16 LUFS)</string>
+    <string name="leveler_target_m14">−14 LUFS</string>
+    <string name="leveler_target_m12">Громче (−12 LUFS)</string>
+
+    <string name="leveler_max_boost_12">До +12 dB — меньше фонового шума</string>
+    <string name="leveler_max_boost_18">До +18 dB</string>
+    <string name="leveler_max_boost_24">До +24 dB</string>
+    <string name="leveler_max_boost_30">До +30 dB — и совсем тихие ролики</string>
+
+    <string name="leveler_ratio_2">2:1 — естественно</string>
+    <string name="leveler_ratio_4">4:1 — обычно</string>
+    <string name="leveler_ratio_8">8:1 — сильно</string>
+    <string name="leveler_ratio_20">20:1 — ничего не бахнет</string>
+</resources>

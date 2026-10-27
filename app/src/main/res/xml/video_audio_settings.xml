@@ -87,6 +87,66 @@
 
     <PreferenceCategory
         android:layout="@layout/settings_category_header_layout"
+        android:title="@string/leveler_category_title"
+        app:singleLineTitle="false"
+        app:iconSpaceReserved="false">
+
+        <SwitchPreferenceCompat
+            android:defaultValue="true"
+            android:key="@string/leveler_enabled_key"
+            android:summary="@string/leveler_enabled_summary"
+            android:title="@string/leveler_enabled_title"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+
+        <ListPreference
+            android:defaultValue="@string/leveler_strength_default"
+            android:dependency="@string/leveler_enabled_key"
+            android:entries="@array/leveler_strength_descriptions"
+            android:entryValues="@array/leveler_strength_values"
+            android:key="@string/leveler_strength_key"
+            android:title="@string/leveler_strength_title"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false"
+            app:useSimpleSummaryProvider="true" />
+
+        <ListPreference
+            android:defaultValue="@string/leveler_target_default"
+            android:dependency="@string/leveler_enabled_key"
+            android:entries="@array/leveler_target_descriptions"
+            android:entryValues="@array/leveler_target_values"
+            android:key="@string/leveler_target_key"
+            android:title="@string/leveler_target_title"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false"
+            app:useSimpleSummaryProvider="true" />
+
+        <ListPreference
+            android:defaultValue="@string/leveler_max_boost_default"
+            android:dependency="@string/leveler_enabled_key"
+            android:entries="@array/leveler_max_boost_descriptions"
+            android:entryValues="@array/leveler_max_boost_values"
+            android:key="@string/leveler_max_boost_key"
+            android:title="@string/leveler_max_boost_title"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false"
+            app:useSimpleSummaryProvider="true" />
+
+        <ListPreference
+            android:defaultValue="@string/leveler_ratio_default"
+            android:dependency="@string/leveler_enabled_key"
+            android:entries="@array/leveler_ratio_descriptions"
+            android:entryValues="@array/leveler_ratio_values"
+            android:key="@string/leveler_ratio_key"
+            android:title="@string/leveler_ratio_title"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:layout="@layout/settings_category_header_layout"
         android:title="@string/settings_category_player_title"
         app:singleLineTitle="false"
         app:iconSpaceReserved="false">

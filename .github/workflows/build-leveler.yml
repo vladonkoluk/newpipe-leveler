@@ -1,0 +1,57 @@
+# Сборка NewPipe Leveler: тесты выравнивания громкости + APK, выкладывается в релиз «latest»
+name: Build NewPipe Leveler
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: build-leveler
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: set up JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: 21
+          distribution: "temurin"
+          cache: 'gradle'
+
+      - name: Test leveler and build APK
+        run: >
+          ./gradlew assembleContinuous testContinuousUnitTest
+          --tests 'org.schabi.newpipe.player.leveler.*' --stacktrace
+
+      - name: Rename APK
+        run: |
+          VERSION_NAME="$(jq -r ".elements[0].versionName" app/build/outputs/apk/continuous/output-metadata.json)"
+          echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
+          mv app/build/outputs/apk/continuous/*.apk NewPipeLeveler.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: NewPipeLeveler
+          path: NewPipeLeveler.apk
+
+      - name: Publish release "latest"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest NewPipeLeveler.apk \
+            --target "$GITHUB_SHA" \
+            --title "NewPipe Leveler $VERSION_NAME (${GITHUB_SHA::7})" \
+            --notes "Скачайте NewPipeLeveler.apk ниже и установите. Новая сборка ставится поверх старой, настройки и подписки сохраняются."

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Выравнивание громкости (NewPipe Leveler): ключи и значения настроек -->
+<resources translatable="false">
+    <string name="leveler_enabled_key">leveler_enabled_key</string>
+    <string name="leveler_strength_key">leveler_strength_key</string>
+    <string name="leveler_target_key">leveler_target_key</string>
+    <string name="leveler_max_boost_key">leveler_max_boost_key</string>
+    <string name="leveler_ratio_key">leveler_ratio_key</string>
+
+    <string name="leveler_strength_default">100</string>
+    <string name="leveler_target_default">-16</string>
+    <string name="leveler_max_boost_default">24</string>
+    <string name="leveler_ratio_default">4</string>
+
+    <string-array name="leveler_strength_values">
+        <item>100</item>
+        <item>80</item>
+        <item>60</item>
+        <item>40</item>
+        <item>0</item>
+    </string-array>
+    <string-array name="leveler_target_values">
+        <item>-20</item>
+        <item>-18</item>
+        <item>-16</item>
+        <item>-14</item>
+        <item>-12</item>
+    </string-array>
+    <string-array name="leveler_max_boost_values">
+        <item>12</item>
+        <item>18</item>
+        <item>24</item>
+        <item>30</item>
+    </string-array>
+    <string-array name="leveler_ratio_values">
+        <item>2</item>
+        <item>4</item>
+        <item>8</item>
+        <item>20</item>
+    </string-array>
+
+    <string-array name="leveler_strength_descriptions">
+        <item>@string/leveler_strength_100</item>
+        <item>@string/leveler_strength_80</item>
+        <item>@string/leveler_strength_60</item>
+        <item>@string/leveler_strength_40</item>
+        <item>@string/leveler_strength_0</item>
+    </string-array>
+    <string-array name="leveler_target_descriptions">
+        <item>@string/leveler_target_m20</item>
+        <item>@string/leveler_target_m18</item>
+        <item>@string/leveler_target_m16</item>
+        <item>@string/leveler_target_m14</item>
+        <item>@string/leveler_target_m12</item>
+    </string-array>
+    <string-array name="leveler_max_boost_descriptions">
+        <item>@string/leveler_max_boost_12</item>
+        <item>@string/leveler_max_boost_18</item>
+        <item>@string/leveler_max_boost_24</item>
+        <item>@string/leveler_max_boost_30</item>
+    </string-array>
+    <string-array name="leveler_ratio_descriptions">
+        <item>@string/leveler_ratio_2</item>
+        <item>@string/leveler_ratio_4</item>
+        <item>@string/leveler_ratio_8</item>
+        <item>@string/leveler_ratio_20</item>
+    </string-array>
+</resources>

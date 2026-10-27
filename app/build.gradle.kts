@@ -56,6 +56,17 @@ configure<ApplicationExtension> {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        // NewPipe Leveler: постоянный ключ из репозитория, чтобы новые сборки ставились поверх
+        // старых без удаления приложения (у ключа отладки CI каждый раз новый ключ)
+        create("leveler") {
+            storeFile = file("leveler.keystore")
+            storePassword = "newpipe-leveler"
+            keyAlias = "leveler"
+            keyPassword = "newpipe-leveler"
+        }
+    }
+
     buildTypes {
         debug {
             isDebuggable = true
@@ -85,17 +96,12 @@ configure<ApplicationExtension> {
 
         register("continuous") {
             initWith(getByName("release"))
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("leveler")
             isDefault = true
 
-            // suffix the app id and the app name with git branch name
-            if (normalizedWorkingBranch.isEmpty() || workingBranch in defaultBranches) {
-                applicationIdSuffix = ".continuous"
-                resValue("string", "app_name", "NewPipe Continuous")
-            } else {
-                applicationIdSuffix = ".continuous.$normalizedWorkingBranch"
-                resValue("string", "app_name", "NewPipe $workingBranch")
-            }
+            // NewPipe Leveler: отдельное приложение рядом с обычным NewPipe
+            applicationIdSuffix = ".leveler"
+            resValue("string", "app_name", "NewPipe Leveler")
         }
     }
 

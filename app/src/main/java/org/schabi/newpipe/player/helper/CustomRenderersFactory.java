@@ -8,6 +8,8 @@ import com.google.android.exoplayer2.Renderer;
 import com.google.android.exoplayer2.mediacodec.MediaCodecSelector;
 import com.google.android.exoplayer2.video.VideoRendererEventListener;
 
+import org.schabi.newpipe.player.leveler.LevelingRenderersFactory;
+
 import java.util.ArrayList;
 
 /**
@@ -20,7 +22,7 @@ import java.util.ArrayList;
  * changed in the case an extension is shipped with the app, such as the AV1 one.
  * </p>
  */
-public final class CustomRenderersFactory extends DefaultRenderersFactory {
+public final class CustomRenderersFactory extends LevelingRenderersFactory {
 
     public CustomRenderersFactory(final Context context) {
         super(context);

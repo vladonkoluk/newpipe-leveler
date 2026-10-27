@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Volume leveling (NewPipe Leveler) -->
+<resources>
+    <string name="leveler_category_title">Volume leveling</string>
+    <string name="leveler_enabled_title">Even volume</string>
+    <string name="leveler_enabled_summary">Quiet parts louder, loud parts quieter — like a night mode. Works in the player itself, without delay.</string>
+    <string name="leveler_strength_title">Leveling strength</string>
+    <string name="leveler_target_title">Volume level</string>
+    <string name="leveler_max_boost_title">Boost of quiet parts</string>
+    <string name="leveler_ratio_title">Compression of sudden loud parts</string>
+
+    <string name="leveler_strength_100" formatted="false">100% — everything at one level</string>
+    <string name="leveler_strength_80" formatted="false">80%</string>
+    <string name="leveler_strength_60" formatted="false">60%</string>
+    <string name="leveler_strength_40" formatted="false">40% — gentle</string>
+    <string name="leveler_strength_0" formatted="false">0% — only between videos</string>
+
+    <string name="leveler_target_m20">Quieter (−20 LUFS)</string>
+    <string name="leveler_target_m18">−18 LUFS</string>
+    <string name="leveler_target_m16">Normal (−16 LUFS)</string>
+    <string name="leveler_target_m14">−14 LUFS</string>
+    <string name="leveler_target_m12">Louder (−12 LUFS)</string>
+
+    <string name="leveler_max_boost_12">Up to +12 dB — less background noise</string>
+    <string name="leveler_max_boost_18">Up to +18 dB</string>
+    <string name="leveler_max_boost_24">Up to +24 dB</string>
+    <string name="leveler_max_boost_30">Up to +30 dB — very quiet videos too</string>
+
+    <string name="leveler_ratio_2">2:1 — natural</string>
+    <string name="leveler_ratio_4">4:1 — normal</string>
+    <string name="leveler_ratio_8">8:1 — strong</string>
+    <string name="leveler_ratio_20">20:1 — nothing ever blasts</string>
+</resources>
