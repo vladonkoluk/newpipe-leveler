@@ -211,6 +211,7 @@ public final class LoudnessLeveler {
     }
 
     private final Params p;
+    private final int sampleRate;
     private final int channels;
     private final Biquad[][] kw;
     private final double cMom;
@@ -253,6 +254,7 @@ public final class LoudnessLeveler {
 
     public LoudnessLeveler(final int sampleRate, final int channelCount, final Params params) {
         p = params;
+        this.sampleRate = sampleRate;
         channels = channelCount;
         kw = new Biquad[channelCount][];
         for (int c = 0; c < channelCount; c++) {
@@ -290,6 +292,10 @@ public final class LoudnessLeveler {
         dqLen = 0;
         pos = 0;
         h2 = 1;
+    }
+
+    public int getSampleRate() {
+        return sampleRate;
     }
 
     public int getChannelCount() {

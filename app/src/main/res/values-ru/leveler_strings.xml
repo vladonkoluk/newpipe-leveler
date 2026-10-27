@@ -4,6 +4,12 @@
     <string name="leveler_category_title">Выравнивание громкости</string>
     <string name="leveler_enabled_title">Ровная громкость</string>
     <string name="leveler_enabled_summary">Тихое громче, громкое тише — как ночной режим. Работает прямо в плеере, без задержки.</string>
+    <string name="leveler_status_title">Состояние</string>
+    <string name="leveler_status_never">Звук ещё не проходил через выравнивание — включите видео</string>
+    <string name="leveler_status_unsupported">Звук идёт в формате, который выравнивание не поддерживает (%1$d)</string>
+    <string name="leveler_status_off">Выключено — звук как в оригинале</string>
+    <string name="leveler_status_active">Работает: поправка %1$s · %2$d Гц · каналов: %3$d</string>
+    <string name="leveler_status_idle">Сейчас ничего не играет. Последняя поправка: %1$s</string>
     <string name="leveler_strength_title">Сила выравнивания</string>
     <string name="leveler_target_title">Уровень громкости</string>
     <string name="leveler_max_boost_title">Усиление тихого</string>

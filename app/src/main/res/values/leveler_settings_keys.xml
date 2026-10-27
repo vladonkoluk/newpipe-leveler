@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Выравнивание громкости (NewPipe Leveler): ключи и значения настроек -->
 <resources translatable="false">
+    <string name="leveler_status_key">leveler_status_key</string>
     <string name="leveler_enabled_key">leveler_enabled_key</string>
     <string name="leveler_strength_key">leveler_strength_key</string>
     <string name="leveler_target_key">leveler_target_key</string>

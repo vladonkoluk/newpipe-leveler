@@ -91,6 +91,14 @@
         app:singleLineTitle="false"
         app:iconSpaceReserved="false">
 
+        <Preference
+            android:key="@string/leveler_status_key"
+            android:persistent="false"
+            android:selectable="false"
+            android:title="@string/leveler_status_title"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+
         <SwitchPreferenceCompat
             android:defaultValue="true"
             android:key="@string/leveler_enabled_key"

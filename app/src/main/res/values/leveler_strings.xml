@@ -4,6 +4,12 @@
     <string name="leveler_category_title">Volume leveling</string>
     <string name="leveler_enabled_title">Even volume</string>
     <string name="leveler_enabled_summary">Quiet parts louder, loud parts quieter — like a night mode. Works in the player itself, without delay.</string>
+    <string name="leveler_status_title">Status</string>
+    <string name="leveler_status_never">Audio has not passed through leveling yet — play a video</string>
+    <string name="leveler_status_unsupported">Audio comes in a format leveling does not support (%1$d)</string>
+    <string name="leveler_status_off">Off — audio as in the original</string>
+    <string name="leveler_status_active">Working: correction %1$s · %2$d Hz · channels: %3$d</string>
+    <string name="leveler_status_idle">Nothing is playing now. Last correction: %1$s</string>
     <string name="leveler_strength_title">Leveling strength</string>
     <string name="leveler_target_title">Volume level</string>
     <string name="leveler_max_boost_title">Boost of quiet parts</string>

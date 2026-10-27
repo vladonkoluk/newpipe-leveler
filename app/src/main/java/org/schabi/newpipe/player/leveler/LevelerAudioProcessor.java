@@ -7,6 +7,7 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.audio.BaseAudioProcessor;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Встраивает {@link LoudnessLeveler} в цепочку звука ExoPlayer. Звук обрабатывается внутри
@@ -14,6 +15,12 @@ import java.nio.ByteBuffer;
  * Работает с 16-битным PCM; остальное (например, passthrough) пропускает как есть.
  */
 public final class LevelerAudioProcessor extends BaseAudioProcessor {
+    // для строки состояния в настройках: работает ли обработка и какая сейчас поправка
+    @Nullable
+    private static volatile LoudnessLeveler lastLeveler;
+    private static volatile long lastAudioNanos;
+    private static volatile int lastOfferedEncoding = C.ENCODING_INVALID;
+
     private final LoudnessLeveler.Params params;
     @Nullable
     private LoudnessLeveler leveler;
@@ -27,6 +34,7 @@ public final class LevelerAudioProcessor extends BaseAudioProcessor {
     @NonNull
     @Override
     protected AudioFormat onConfigure(@NonNull final AudioFormat inputAudioFormat) {
+        lastOfferedEncoding = inputAudioFormat.encoding;
         return inputAudioFormat.encoding == C.ENCODING_PCM_16BIT
                 ? inputAudioFormat : AudioFormat.NOT_SET;
     }
@@ -75,8 +83,26 @@ public final class LevelerAudioProcessor extends BaseAudioProcessor {
         inputBuffer.asShortBuffer().get(samples, 0, count);
         inputBuffer.position(inputBuffer.position() + count * 2);
         leveler.process(samples, count / leveler.getChannelCount(), sampleRate);
+        lastLeveler = leveler;
+        lastAudioNanos = System.nanoTime();
         output.asShortBuffer().put(samples, 0, count);
         output.position(count * 2);
         output.flip();
+    }
+
+    /** Обработчик, через который последним проходил звук, или null, если звука ещё не было. */
+    @Nullable
+    static LoudnessLeveler getLastLeveler() {
+        return lastLeveler;
+    }
+
+    /** Сколько миллисекунд назад через выравнивание проходил звук. */
+    static long msSinceLastAudio() {
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastAudioNanos);
+    }
+
+    /** Формат звука, который плеер последним предлагал обработчику. */
+    static int getLastOfferedEncoding() {
+        return lastOfferedEncoding;
     }
 }

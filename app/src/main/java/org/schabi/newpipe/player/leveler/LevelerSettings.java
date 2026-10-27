@@ -6,7 +6,11 @@ import android.content.SharedPreferences;
 import androidx.annotation.NonNull;
 import androidx.preference.PreferenceManager;
 
+import com.google.android.exoplayer2.C;
+
 import org.schabi.newpipe.R;
+
+import java.util.Locale;
 
 /**
  * Настройки выравнивания громкости из экрана «Видео и аудио». Один общий
@@ -44,6 +48,26 @@ public final class LevelerSettings {
                 c.getString(R.string.leveler_max_boost_default));
         params.ratio = number(prefs, c.getString(R.string.leveler_ratio_key),
                 c.getString(R.string.leveler_ratio_default));
+    }
+
+    /** Строка состояния для настроек: работает ли выравнивание и какая сейчас поправка. */
+    @NonNull
+    public static String getStatus(@NonNull final Context c) {
+        final LoudnessLeveler lev = LevelerAudioProcessor.getLastLeveler();
+        if (lev == null) {
+            final int enc = LevelerAudioProcessor.getLastOfferedEncoding();
+            return enc != C.ENCODING_INVALID && enc != C.ENCODING_PCM_16BIT
+                    ? c.getString(R.string.leveler_status_unsupported, enc)
+                    : c.getString(R.string.leveler_status_never);
+        }
+        if (!getParams(c).enabled) {
+            return c.getString(R.string.leveler_status_off);
+        }
+        final String gain = String.format(Locale.ROOT, "%+.1f dB", lev.getGainDb());
+        return LevelerAudioProcessor.msSinceLastAudio() > 2000
+                ? c.getString(R.string.leveler_status_idle, gain)
+                : c.getString(R.string.leveler_status_active, gain,
+                        lev.getSampleRate(), lev.getChannelCount());
     }
 
     private static double number(@NonNull final SharedPreferences prefs,
