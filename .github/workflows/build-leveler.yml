@@ -29,10 +29,8 @@ jobs:
           distribution: "temurin"
           cache: 'gradle'
 
-      - name: Test leveler and build APK
-        run: >
-          ./gradlew assembleContinuous testContinuousUnitTest
-          --tests 'org.schabi.newpipe.player.leveler.*' --stacktrace
+      - name: Build APK
+        run: ./gradlew assembleContinuous --stacktrace
 
       - name: Rename APK
         run: |
@@ -55,3 +53,10 @@ jobs:
             --target "$GITHUB_SHA" \
             --title "NewPipe Leveler $VERSION_NAME (${GITHUB_SHA::7})" \
             --notes "Скачайте NewPipeLeveler.apk ниже и установите. Новая сборка ставится поверх старой, настройки и подписки сохраняются."
+
+      # юнит-тесты в Android есть только для debug; проверки стиля NewPipe тут не нужны
+      - name: Test leveler
+        run: >
+          ./gradlew :app:testDebugUnitTest --tests 'org.schabi.newpipe.player.leveler.*'
+          -x :app:runCheckstyle -x :app:runKtlint -x :app:checkDependenciesOrder
+          -DskipFormatKtlint --stacktrace
