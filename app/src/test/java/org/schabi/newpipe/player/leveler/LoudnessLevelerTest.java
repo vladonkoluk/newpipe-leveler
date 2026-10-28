@@ -169,7 +169,89 @@ public class LoudnessLevelerTest {
         return s / v.size();
     }
 
+    /** Настройки режима «Максимум» — как в LevelerSettings. */
+    private static LoudnessLeveler.Params maxParams() {
+        final LoudnessLeveler.Params p = new LoudnessLeveler.Params();
+        p.levTime = 0.1;
+        p.levAtt = 0.02;
+        p.levRel = 0.1;
+        p.compAbove = 0;
+        p.ratio = 20;
+        return p;
+    }
+
+    /** «Живая речь»: громкость скачет от слова к слову (±8 dB) и от сцены к сцене. */
+    private static double[] livelySpeech() {
+        final java.util.Random rnd = new java.util.Random(3);
+        final double[] scenes = {-30, -18, -38, -10};
+        final List<double[]> parts = new ArrayList<>();
+        for (int k = 0; k < 80; k++) {
+            parts.add(speech(0.5, scenes[k / 20] + rnd.nextDouble() * 16 - 8, k + 1));
+        }
+        return concat(parts.toArray(new double[0][]));
+    }
+
+    /** Разброс громкости по 0.4 с между 10-м и 90-м процентилем, dB. */
+    private static double spread(final double[] y) {
+        final List<Double> m = new ArrayList<>();
+        for (final double l : blocks(seg(y, 5, (double) y.length / SR))) {
+            if (l > -60) {
+                m.add(l);
+            }
+        }
+        java.util.Collections.sort(m);
+        return m.get((int) (0.9 * (m.size() - 1))) - m.get((int) (0.1 * (m.size() - 1)));
+    }
+
+    /** На сколько dB голос громче фона в паузах (речь -24 LUFS, фон -50, на входе 26). */
+    private static double voiceOverNoise(final LoudnessLeveler.Params params) {
+        final java.util.Random rnd = new java.util.Random(7);
+        final List<double[]> parts = new ArrayList<>();
+        for (int k = 0; k < 12; k++) {
+            final double[] s = speech(2, -24, k + 1);
+            for (int i = (int) (1.9 * SR); i < s.length; i++) {
+                s[i] = 0;
+            }
+            parts.add(s);
+            parts.add(new double[SR]);
+        }
+        final double[] sp = concat(parts.toArray(new double[0][]));
+        final double[] hiss = new double[sp.length];
+        for (int i = 0; i < hiss.length; i++) {
+            hiss[i] = rnd.nextDouble() * 2 - 1;
+        }
+        scaleTo(hiss, -50);
+        final double[] x = new double[sp.length];
+        for (int i = 0; i < x.length; i++) {
+            x[i] = sp[i] + hiss[i];
+        }
+        final double[] y = process(x, params);
+        final List<Double> voice = new ArrayList<>();
+        final List<Double> noise = new ArrayList<>();
+        for (int k = 4; k < 12; k++) {
+            voice.add(integrated(seg(y, k * 3, k * 3 + 1.9)));
+            noise.add(integrated(seg(y, k * 3 + 2.15, k * 3 + 2.95)));
+        }
+        return mean(voice) - mean(noise);
+    }
+
     // ---------- проверки ----------
+
+    @Test
+    public void wordToWordLoudnessIsLeveled() {
+        // на входе разброс около 34 dB
+        final double normal = spread(process(livelySpeech(), new LoudnessLeveler.Params()));
+        final double max = spread(process(livelySpeech(), maxParams()));
+        assertTrue("100%: разброс " + normal + " dB", normal <= 7.5);
+        assertTrue("Максимум: разброс " + max + " dB", max <= 5.5);
+        assertTrue("Максимум ровнее, чем 100%: " + max + " < " + normal, max < normal - 1);
+    }
+
+    @Test
+    public void maximumKeepsBackgroundNoiseDown() {
+        final double snr = voiceOverNoise(maxParams());
+        assertTrue("голос громче фона на " + snr + " dB", snr >= 18);
+    }
 
     @Test
     public void quietAndLoudClipsReachTarget() {
@@ -223,34 +305,7 @@ public class LoudnessLevelerTest {
 
     @Test
     public void backgroundNoiseInPausesIsNotPumpedUp() {
-        final java.util.Random rnd = new java.util.Random(7);
-        final List<double[]> parts = new ArrayList<>();
-        for (int k = 0; k < 12; k++) {
-            final double[] s = speech(2, -24, k + 1);
-            for (int i = (int) (1.9 * SR); i < s.length; i++) {
-                s[i] = 0;
-            }
-            parts.add(s);
-            parts.add(new double[SR]);
-        }
-        final double[] sp = concat(parts.toArray(new double[0][]));
-        final double[] hiss = new double[sp.length];
-        for (int i = 0; i < hiss.length; i++) {
-            hiss[i] = rnd.nextDouble() * 2 - 1;
-        }
-        scaleTo(hiss, -50);
-        final double[] x = new double[sp.length];
-        for (int i = 0; i < x.length; i++) {
-            x[i] = sp[i] + hiss[i];
-        }
-        final double[] y = process(x, new LoudnessLeveler.Params());
-        final List<Double> voice = new ArrayList<>();
-        final List<Double> noise = new ArrayList<>();
-        for (int k = 4; k < 12; k++) {
-            voice.add(integrated(seg(y, k * 3, k * 3 + 1.9)));
-            noise.add(integrated(seg(y, k * 3 + 2.15, k * 3 + 2.95)));
-        }
-        final double snr = mean(voice) - mean(noise);
+        final double snr = voiceOverNoise(new LoudnessLeveler.Params());
         assertTrue("голос громче фона на " + snr + " dB (на входе 26)", snr >= 18);
     }
 

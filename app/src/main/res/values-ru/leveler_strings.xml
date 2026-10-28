@@ -15,6 +15,7 @@
     <string name="leveler_max_boost_title">Усиление тихого</string>
     <string name="leveler_ratio_title">Сжатие внезапно громкого</string>
 
+    <string name="leveler_strength_max">Максимум — как ночной режим</string>
     <string name="leveler_strength_100" formatted="false">100% — всё на одном уровне</string>
     <string name="leveler_strength_80" formatted="false">80%</string>
     <string name="leveler_strength_60" formatted="false">60%</string>

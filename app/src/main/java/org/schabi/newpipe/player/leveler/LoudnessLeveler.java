@@ -36,6 +36,8 @@ public final class LoudnessLeveler {
         public volatile double levAtt = 0.05;
         /** Как быстро прибавляет при тихом, сек. */
         public volatile double levRel = 0.2;
+        /** Окно измерения для выравнивания внутри ролика, сек. */
+        public volatile double levTime = 0.2;
         /** Тише этого (LUFS на входе) — тишина, усиление не трогаем. */
         public volatile double gate = -52;
         /** Тише недавней речи на столько dB (и без слогов) — пауза: усиление почти не растёт. */
@@ -52,8 +54,6 @@ public final class LoudnessLeveler {
         public volatile double ceiling = -1;
     }
 
-    /** Окно измерения для выравнивания внутри ролика, сек. */
-    private static final double LEV_TIME = 0.2;
     /** Шаг управляющих вычислений, сэмплов. */
     private static final int CTRL = 16;
 
@@ -128,8 +128,9 @@ public final class LoudnessLeveler {
         private double agcDb;
         private double levDb;
         private double speechDb = -70;
-        // короткие блоки по 25 мс за последние 0.4 с — отличать речь (скачет по слогам) от фона
-        private final double[] blk = new double[16];
+        // короткие блоки по 25 мс за последние 0.15 с — отличать речь (скачет по слогам) от фона.
+        // Окно короткое, чтобы тихое слово сразу после громкого не принималось за паузу.
+        private final double[] blk = new double[6];
         private int blkPos;
         private double blkAcc;
         private double blkT;
@@ -226,7 +227,8 @@ public final class LoudnessLeveler {
     private double momPow;
     private double envPow;
     private double levBlock;
-    private final double[] levRing;
+    private double[] levRing;
+    private final double ctrlRate;
     private double levSum;
     private int levPos;
     private double compDb;
@@ -269,7 +271,8 @@ public final class LoudnessLeveler {
         cCompAtt = coef(0.005, cr);
         cCompRel = coef(0.25, cr);
         gc = new GainComputer(params);
-        levRing = new double[Math.max(1, (int) Math.round(LEV_TIME * cr))];
+        ctrlRate = cr;
+        levRing = new double[levRingSize()];
 
         lookahead = Math.max(1, (int) Math.round(0.005 * sampleRate));
         yRing = new float[channelCount][lookahead];
@@ -330,8 +333,19 @@ public final class LoudnessLeveler {
         return dqV[dqHead];
     }
 
+    private int levRingSize() {
+        return Math.max(1, (int) Math.round(p.levTime * ctrlRate));
+    }
+
     private void control(final double sampleRate) {
         final double dt = CTRL / sampleRate;
+        if (levRing.length != levRingSize()) { // окно поменяли в настройках
+            final double avg = levSum / levRing.length;
+            levRing = new double[levRingSize()];
+            java.util.Arrays.fill(levRing, avg);
+            levSum = avg * levRing.length;
+            levPos = 0;
+        }
         final double mom = -0.691 + toDb(momPow);
         final double bp = levBlock / CTRL; // мощность за этот шаг
         levBlock = 0;

@@ -15,6 +15,7 @@
     <string name="leveler_max_boost_title">Boost of quiet parts</string>
     <string name="leveler_ratio_title">Compression of sudden loud parts</string>
 
+    <string name="leveler_strength_max">Maximum — like a night mode</string>
     <string name="leveler_strength_100" formatted="false">100% — everything at one level</string>
     <string name="leveler_strength_80" formatted="false">80%</string>
     <string name="leveler_strength_60" formatted="false">60%</string>

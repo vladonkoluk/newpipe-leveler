@@ -24,6 +24,8 @@ import java.util.concurrent.TimeUnit;
  * (его только записывали), после чего слушатель собирался сборщиком мусора.</p>
  */
 public final class LevelerSettings {
+    /** Значение «Силы выравнивания» для режима «Максимум». */
+    private static final String MAX_STRENGTH = "max";
     private static final long REFRESH_NANOS = TimeUnit.MILLISECONDS.toNanos(300);
 
     private static LoudnessLeveler.Params params;
@@ -64,8 +66,16 @@ public final class LevelerSettings {
         params.enabled = prefs.getBoolean(c.getString(R.string.leveler_enabled_key), true);
         params.target = number(prefs, c.getString(R.string.leveler_target_key),
                 c.getString(R.string.leveler_target_default));
-        params.strength = number(prefs, c.getString(R.string.leveler_strength_key),
+        final String strength = prefs.getString(c.getString(R.string.leveler_strength_key),
+                c.getString(R.string.leveler_strength_default));
+        final boolean max = MAX_STRENGTH.equals(strength);
+        // «Максимум»: быстрее реагирует (окно 0.1 с, 20/100 мс) и прижимает всё выше цели
+        params.strength = max ? 1 : number(prefs, c.getString(R.string.leveler_strength_key),
                 c.getString(R.string.leveler_strength_default)) / 100;
+        params.levTime = max ? 0.1 : 0.2;
+        params.levAtt = max ? 0.02 : 0.05;
+        params.levRel = max ? 0.1 : 0.2;
+        params.compAbove = max ? 0 : 4;
         params.maxBoost = number(prefs, c.getString(R.string.leveler_max_boost_key),
                 c.getString(R.string.leveler_max_boost_default));
         params.ratio = number(prefs, c.getString(R.string.leveler_ratio_key),
