@@ -247,6 +247,74 @@ public class LoudnessLevelerTest {
         assertTrue("Максимум ровнее, чем 100%: " + max + " < " + normal, max < normal - 1);
     }
 
+    /** Мощность окна в dB. */
+    private static double winDb(final double[] y, final int from, final int n) {
+        double p = 0;
+        for (int i = from; i < from + n; i++) {
+            p += y[i] * y[i];
+        }
+        return 10 * Math.log10(p / n + 1e-20);
+    }
+
+    /**
+     * Насколько резкие звуки громче обычной речи на выходе, dB: {хлопки, выкрики}.
+     * Речь -20 LUFS, каждые 2.1 с хлопок (40 мс, пик 0.9) или выкрик (0.3 с, на 14 dB громче).
+     * Громкость события — самое громкое окно 50 мс, речи — медиана окон 400 мс.
+     */
+    private static double[] transientsOverSpeech(final LoudnessLeveler.Params params) {
+        final double[] x = speech(40, -20, 11);
+        final java.util.Random rnd = new java.util.Random(9);
+        final List<double[]> events = new ArrayList<>(); // {время, 0 — хлопок / 1 — выкрик}
+        for (int k = 0; k < 18; k++) {
+            final double t = 3 + k * 2.1;
+            final int i0 = (int) Math.round(t * SR);
+            if (k % 2 == 0) {
+                for (int i = 0; i < 0.04 * SR; i++) {
+                    x[i0 + i] += 0.9 * (rnd.nextDouble() * 2 - 1) * Math.exp(-i / (0.008 * SR));
+                }
+            } else {
+                final double[] s = speech(1, -6, 50 + k);
+                for (int i = 0; i < 0.3 * SR; i++) {
+                    x[i0 + i] += s[i];
+                }
+            }
+            events.add(new double[]{t, k % 2});
+        }
+        final double[] y = params == null ? x : process(x, params);
+        final int n400 = (int) Math.round(0.4 * SR);
+        final int n50 = (int) Math.round(0.05 * SR);
+        final List<Double> normal = new ArrayList<>();
+        for (int s = 0; s + n400 < y.length; s += n400) {
+            boolean near = false;
+            for (final double[] e : events) {
+                near |= Math.abs((double) s / SR - e[0]) < 0.8;
+            }
+            if (!near) {
+                normal.add(winDb(y, s, n400));
+            }
+        }
+        java.util.Collections.sort(normal);
+        final double speechDb = normal.get(normal.size() / 2);
+        final List<Double> claps = new ArrayList<>();
+        final List<Double> shouts = new ArrayList<>();
+        for (final double[] e : events) {
+            double m = -200;
+            final double end = e[0] + (e[1] == 0 ? 0.06 : 0.35);
+            for (int s = (int) ((e[0] - 0.02) * SR); s < end * SR; s += (int) (0.005 * SR)) {
+                m = Math.max(m, winDb(y, s, n50));
+            }
+            (e[1] == 0 ? claps : shouts).add(m - speechDb);
+        }
+        return new double[]{mean(claps), mean(shouts)};
+    }
+
+    @Test
+    public void suddenClapsAndShoutsDoNotStickOut() {
+        final double[] r = transientsOverSpeech(maxParams());
+        assertTrue("хлопок над речью " + r[0] + " dB", r[0] <= 2);
+        assertTrue("выкрик над речью " + r[1] + " dB", r[1] <= 5.5);
+    }
+
     @Test
     public void maximumKeepsBackgroundNoiseDown() {
         final double snr = voiceOverNoise(maxParams());
@@ -346,7 +414,7 @@ public class LoudnessLevelerTest {
         final LoudnessLeveler.Params params = new LoudnessLeveler.Params();
         params.enabled = false;
         final double[] y = process(x, params);
-        final int d = (int) Math.round(0.005 * SR);
+        final int d = (int) Math.round(0.025 * SR); // 20 мс заглядывания + 5 мс лимитера
         double err = 0;
         for (int i = SR; i < x.length; i++) {
             err = Math.max(err, Math.abs(y[i] - Math.round(x[i - d] * 32768) / 32768.0));

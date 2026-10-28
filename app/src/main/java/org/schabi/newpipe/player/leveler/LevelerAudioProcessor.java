@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Встраивает {@link LoudnessLeveler} в цепочку звука ExoPlayer. Звук обрабатывается внутри
- * плеера, до вывода: без задержки (кроме 5 мс лимитера) и без треска.
+ * плеера, до вывода: без треска и без заметной задержки (25 мс: заглядывание вперёд и лимитер).
  * Работает с 16-битным PCM; остальное (например, passthrough) пропускает как есть.
  */
 public final class LevelerAudioProcessor extends BaseAudioProcessor {

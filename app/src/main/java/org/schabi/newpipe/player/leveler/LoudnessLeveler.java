@@ -12,9 +12,11 @@ package org.schabi.newpipe.player.leveler;
  *     <li>Компрессор — быстро прижимает внезапные громкие места.</li>
  *     <li>Лимитер с заглядыванием вперёд на 5 мс — пики не выше потолка.</li>
  * </ol>
+ * <p>Громкость меряется по звуку на 20 мс раньше, чем он звучит: так усиление успевает
+ * убавиться к началу выкрика, хлопка или удара, а не через 20–30 мс после.</p>
  *
  * <p>Чистая Java без зависимостей от Android, чтобы проверять алгоритм обычными тестами.
- * Задержка звука — 5 мс.</p>
+ * Задержка звука — 25 мс (20 мс заглядывания + 5 мс лимитера).</p>
  */
 // CHECKSTYLE:OFF — числовые константы алгоритма понятнее на месте, чем вынесенные в поля
 public final class LoudnessLeveler {
@@ -237,6 +239,12 @@ public final class LoudnessLeveler {
     private double mix = 1;
     private int tick;
 
+    // заглядывание вперёд: громкость меряется по текущему звуку, а применяется к звуку 20 мс назад
+    private final int preDelay;
+    private final float[][] preRing;
+    private int prePos;
+    private final double[] xs;
+
     // лимитер: задержка L, скользящий минимум по L+1, скользящее среднее по L
     private final int lookahead;
     private final float[][] yRing;
@@ -274,6 +282,9 @@ public final class LoudnessLeveler {
         ctrlRate = cr;
         levRing = new double[levRingSize()];
 
+        preDelay = Math.max(1, (int) Math.round(0.02 * sampleRate));
+        preRing = new float[channelCount][preDelay];
+        xs = new double[channelCount];
         lookahead = Math.max(1, (int) Math.round(0.005 * sampleRate));
         yRing = new float[channelCount][lookahead];
         xRing = new float[channelCount][lookahead];
@@ -286,9 +297,11 @@ public final class LoudnessLeveler {
     /** Сброс линии задержки (после перемотки), усиление при этом сохраняется. */
     public void clearDelay() {
         for (int c = 0; c < channels; c++) {
+            java.util.Arrays.fill(preRing[c], 0);
             java.util.Arrays.fill(yRing[c], 0);
             java.util.Arrays.fill(xRing[c], 0);
         }
+        prePos = 0;
         java.util.Arrays.fill(avgRing, 1);
         avgSum = lookahead;
         dqHead = 0;
@@ -409,8 +422,11 @@ public final class LoudnessLeveler {
 
             double peak = 0;
             for (int c = 0; c < ch; c++) {
-                peak = Math.max(peak, Math.abs(buf[base + c] / 32768.0 * g));
+                xs[c] = preRing[c][prePos];
+                preRing[c][prePos] = (float) (buf[base + c] / 32768.0);
+                peak = Math.max(peak, Math.abs(xs[c] * g));
             }
+            prePos = prePos + 1 == preDelay ? 0 : prePos + 1;
             final double req = peak > ceil ? ceil / peak : 1;
             final double h = slidingMin(req);
             h2 = Math.min(h, h2 + (1 - h2) * cLimRel);
@@ -421,7 +437,7 @@ public final class LoudnessLeveler {
             mix += (mixTarget - mix) * cMix;
             final double m = mix;
             for (int c = 0; c < ch; c++) {
-                final double x = buf[base + c] / 32768.0;
+                final double x = xs[c];
                 final double yd = yRing[c][pos];
                 final double xd = xRing[c][pos];
                 yRing[c][pos] = (float) (x * g);
