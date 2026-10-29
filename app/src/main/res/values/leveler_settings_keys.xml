@@ -14,6 +14,8 @@
     <string name="leveler_ratio_default">4</string>
 
     <string-array name="leveler_strength_values">
+        <item>ultra</item>
+        <item>extreme</item>
         <item>max</item>
         <item>100</item>
         <item>80</item>
@@ -42,6 +44,8 @@
     </string-array>
 
     <string-array name="leveler_strength_descriptions">
+        <item>@string/leveler_strength_ultra</item>
+        <item>@string/leveler_strength_extreme</item>
         <item>@string/leveler_strength_max</item>
         <item>@string/leveler_strength_100</item>
         <item>@string/leveler_strength_80</item>

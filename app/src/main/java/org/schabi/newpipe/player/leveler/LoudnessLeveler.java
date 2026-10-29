@@ -54,6 +54,10 @@ public final class LoudnessLeveler {
         public volatile double ratio = 4;
         /** Потолок лимитера, dBFS. */
         public volatile double ceiling = -1;
+        /** Как быстро компрессор отпускает после громкого места, сек. */
+        public volatile double compRel = 0.25;
+        /** Время реакции детектора компрессора, сек (меньше — ловит более короткие звуки). */
+        public volatile double envTime = 0.02;
     }
 
     /** Шаг управляющих вычислений, сэмплов. */
@@ -218,12 +222,12 @@ public final class LoudnessLeveler {
     private final int channels;
     private final Biquad[][] kw;
     private final double cMom;
-    private final double cEnv;
+    private double cEnv;
+    private double cEnvFor = -1;
     private final double cGain;
     private final double cMix;
     private final double cLimRel;
     private final double cCompAtt;
-    private final double cCompRel;
     private final GainComputer gc;
 
     private double momPow;
@@ -272,12 +276,10 @@ public final class LoudnessLeveler {
         }
         final double cr = (double) sampleRate / CTRL;
         cMom = coef(0.4, sampleRate);
-        cEnv = coef(0.02, sampleRate);
         cGain = coef(0.001, sampleRate);
         cMix = coef(0.01, sampleRate);
         cLimRel = coef(0.08, sampleRate);
         cCompAtt = coef(0.005, cr);
-        cCompRel = coef(0.25, cr);
         gc = new GainComputer(params);
         ctrlRate = cr;
         levRing = new double[levRingSize()];
@@ -386,7 +388,7 @@ public final class LoudnessLeveler {
         } else if (over > -knee / 2) {
             red = s * (over + knee / 2) * (over + knee / 2) / (2 * knee);
         }
-        compDb += (red - compDb) * (red < compDb ? cCompAtt : cCompRel);
+        compDb += (red - compDb) * (red < compDb ? cCompAtt : coef(p.compRel, ctrlRate));
         gTarget = fromDb(levelDb + compDb);
         gainDb = levelDb + compDb;
     }
@@ -412,6 +414,10 @@ public final class LoudnessLeveler {
                 pk += k * k;
             }
             momPow += (pk - momPow) * cMom;
+            if (p.envTime != cEnvFor) { // время детектора меняют в настройках
+                cEnvFor = p.envTime;
+                cEnv = coef(cEnvFor, sampleRate);
+            }
             envPow += (pk - envPow) * cEnv;
             levBlock += pk;
             if (++tick >= CTRL) {

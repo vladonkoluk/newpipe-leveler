@@ -180,6 +180,20 @@ public class LoudnessLevelerTest {
         return p;
     }
 
+    /** Настройки режимов «Экстрим» (ultra = false) и «Ультра» — как в LevelerSettings. */
+    private static LoudnessLeveler.Params extremeParams(final boolean ultra) {
+        final LoudnessLeveler.Params p = new LoudnessLeveler.Params();
+        p.ratio = 20;
+        p.levTime = ultra ? 0.03 : 0.05;
+        p.levAtt = ultra ? 0.005 : 0.01;
+        p.levRel = ultra ? 0.03 : 0.05;
+        p.compAbove = ultra ? -4 : -2;
+        p.agcTime = ultra ? 1 : 1.5;
+        p.compRel = ultra ? 0.05 : 0.1;
+        p.pauseRel = ultra ? 1 : 3;
+        return p;
+    }
+
     /** «Живая речь»: громкость скачет от слова к слову (±8 dB) и от сцены к сцене. */
     private static double[] livelySpeech() {
         final java.util.Random rnd = new java.util.Random(3);
@@ -313,6 +327,23 @@ public class LoudnessLevelerTest {
         final double[] r = transientsOverSpeech(maxParams());
         assertTrue("хлопок над речью " + r[0] + " dB", r[0] <= 2);
         assertTrue("выкрик над речью " + r[1] + " dB", r[1] <= 5.5);
+    }
+
+    @Test
+    public void extremeAndUltraAreEvenMoreLevel() {
+        // идеально ровная речь (все слова одной громкости) по этой метрике даёт ~3.3 dB
+        final double max = spread(process(livelySpeech(), maxParams()));
+        for (final boolean ultra : new boolean[]{false, true}) {
+            final double[] y = process(livelySpeech(), extremeParams(ultra));
+            final double sp = spread(y);
+            assertTrue((ultra ? "Ультра" : "Экстрим") + ": разброс " + sp + ", Максимум " + max,
+                    sp <= max && sp <= 3.2);
+            double peak = 0;
+            for (final double v : y) {
+                peak = Math.max(peak, Math.abs(v));
+            }
+            assertTrue("пик " + 20 * Math.log10(peak), 20 * Math.log10(peak) <= -0.95);
+        }
     }
 
     @Test
