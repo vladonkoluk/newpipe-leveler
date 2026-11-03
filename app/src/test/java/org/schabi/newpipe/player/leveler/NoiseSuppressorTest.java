@@ -27,9 +27,96 @@ public class NoiseSuppressorTest {
         }
 
         @Override
+        public int delayFrames() {
+            return 0;
+        }
+
+        @Override
         public void release() {
             released = true;
         }
+    }
+
+    /**
+     * «Плохая» нейросеть, как в громком шуме: задерживает на 2 кадра (как новая RNNoise),
+     * всё глушит, а оценку речи возвращает заданную.
+     */
+    private static final class Silencer implements NoiseSuppressor.Engine {
+        private final float vad;
+
+        Silencer(final float vad) {
+            this.vad = vad;
+        }
+
+        @Override
+        public float process(final float[] frame) {
+            java.util.Arrays.fill(frame, 0);
+            return vad;
+        }
+
+        @Override
+        public int delayFrames() {
+            return 2;
+        }
+
+        @Override
+        public void release() {
+        }
+    }
+
+    private static double[] runEngine(final NoiseSuppressor.Engine engine, final double keep,
+                                      final double[] mono) {
+        final NoiseSuppressor ns = new NoiseSuppressor(48000, 1, engine);
+        ns.setKeepSpeech(keep);
+        final double[] out = new double[mono.length];
+        final short[] buf = new short[1000];
+        for (int p = 0; p < mono.length; p += 1000) {
+            final int n = Math.min(1000, mono.length - p);
+            for (int i = 0; i < n; i++) {
+                buf[i] = (short) Math.round(mono[p + i]);
+            }
+            ns.process(buf, n);
+            for (int i = 0; i < n; i++) {
+                out[p + i] = buf[i];
+            }
+        }
+        return out;
+    }
+
+    @Test
+    public void keepSpeechReturnsOriginalWhereSpeechIsSure() {
+        // нейросеть «съела» всё, но уверена, что это речь: возвращается 70% оригинала,
+        // выровненного по её задержке (2 кадра) — без сдвига и искажений
+        final double[] x = tones(48000, 2);
+        final double[] y = runEngine(new Silencer(0.99f), 0.7, x);
+        final int d = new NoiseSuppressor(48000, 1, new Silencer(1)).bufferDelay()
+                + 2 * NoiseSuppressor.FRAME;
+        double err = 0;
+        for (int i = 24000; i < x.length; i++) {
+            err = Math.max(err, Math.abs(y[i] - 0.7 * x[i - d]));
+        }
+        assertTrue("возвращено 70% оригинала с задержкой " + d + "; отклонение " + err, err < 2);
+    }
+
+    @Test
+    public void keepSpeechAddsNothingInPauses() {
+        // нейросеть уверена, что речи нет: подмешивания нет, тишина остаётся тишиной
+        final double[] y = runEngine(new Silencer(0.05f), 0.7, tones(48000, 2));
+        double peak = 0;
+        for (int i = 2000; i < y.length; i++) {
+            peak = Math.max(peak, Math.abs(y[i]));
+        }
+        assertEquals("в паузах тихо", 0, peak, 0.5);
+    }
+
+    @Test
+    public void keepSpeechOffKeepsNetworkOutput() {
+        final double[] y = runEngine(new Silencer(0.99f), 0, tones(48000, 2));
+        double peak = 0;
+        for (final double v : y) {
+            peak = Math.max(peak, Math.abs(v));
+        }
+        assertEquals("«Беречь речь» выкл — только результат нейросети", 0, peak, 0.5);
     }
 
     private static final double[] FREQS = {180, 440, 1250, 3100, 7000, 12000};

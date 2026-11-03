@@ -71,6 +71,8 @@ public final class LoudnessLeveler {
          * {@link LevelerAudioProcessor} перед выравниванием (см. {@link NoiseSuppressor}).
          */
         public volatile int noise = NOISE_OFF;
+        /** «Беречь речь»: сколько оригинала подмешивать там, где звучит речь (0 — выкл). */
+        public volatile double keepSpeech = 0.7;
         /** «Разборчивая речь»: голос громче музыки и фона (см. {@link SpeechClarity}). */
         public volatile boolean clarity = false;
     }

@@ -6,6 +6,8 @@
     <string name="leveler_clarity_key">leveler_clarity_key</string>
     <string name="leveler_noise_key">leveler_noise_key</string>
     <string name="leveler_noise_default">off</string>
+    <string name="leveler_keep_speech_key">leveler_keep_speech_key</string>
+    <string name="leveler_keep_speech_default">70</string>
     <string name="leveler_strength_key">leveler_strength_key</string>
     <string name="leveler_target_key">leveler_target_key</string>
     <string name="leveler_max_boost_key">leveler_max_boost_key</string>
@@ -16,6 +18,16 @@
     <string name="leveler_max_boost_default">24</string>
     <string name="leveler_ratio_default">4</string>
 
+    <string-array name="leveler_keep_speech_values">
+        <item>0</item>
+        <item>50</item>
+        <item>70</item>
+    </string-array>
+    <string-array name="leveler_keep_speech_descriptions">
+        <item>@string/leveler_keep_speech_0</item>
+        <item>@string/leveler_keep_speech_50</item>
+        <item>@string/leveler_keep_speech_70</item>
+    </string-array>
     <string-array name="leveler_noise_values">
         <item>off</item>
         <item>soft</item>

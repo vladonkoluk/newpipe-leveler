@@ -72,6 +72,8 @@ public final class LevelerSettings {
         params.noise = "strong".equals(noise) ? LoudnessLeveler.Params.NOISE_STRONG
                 : "soft".equals(noise) ? LoudnessLeveler.Params.NOISE_SOFT
                 : LoudnessLeveler.Params.NOISE_OFF;
+        params.keepSpeech = number(prefs, c.getString(R.string.leveler_keep_speech_key),
+                c.getString(R.string.leveler_keep_speech_default)) / 100;
         params.target = number(prefs, c.getString(R.string.leveler_target_key),
                 c.getString(R.string.leveler_target_default));
         final String strength = prefs.getString(c.getString(R.string.leveler_strength_key),

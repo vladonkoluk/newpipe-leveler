@@ -54,6 +54,11 @@ final class NativeRnNoise implements NoiseSuppressor.Engine {
     }
 
     @Override
+    public int delayFrames() {
+        return strong ? 2 : 1;
+    }
+
+    @Override
     public void release() {
         if (handle != 0) {
             if (strong) {

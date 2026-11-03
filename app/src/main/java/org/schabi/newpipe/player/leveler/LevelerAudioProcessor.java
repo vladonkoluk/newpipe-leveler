@@ -125,6 +125,7 @@ public final class LevelerAudioProcessor extends BaseAudioProcessor {
         final int frames = count / leveler.getChannelCount();
         updateSuppressor(leveler.getChannelCount());
         if (suppressor != null) {
+            suppressor.setKeepSpeech(params.keepSpeech);
             suppressor.process(samples, frames);
         }
         leveler.process(samples, frames, sampleRate);
