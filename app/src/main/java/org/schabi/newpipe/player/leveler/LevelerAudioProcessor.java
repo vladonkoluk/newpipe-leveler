@@ -20,12 +20,18 @@ public final class LevelerAudioProcessor extends BaseAudioProcessor {
     private static volatile LoudnessLeveler lastLeveler;
     private static volatile long lastAudioNanos;
     private static volatile int lastOfferedEncoding = C.ENCODING_INVALID;
+    // какое шумоподавление сейчас работает (для строки состояния)
+    private static volatile int activeNoise = LoudnessLeveler.Params.NOISE_OFF;
 
     private final LoudnessLeveler.Params params;
     @Nullable
     private LoudnessLeveler leveler;
     private int sampleRate;
     private short[] samples = new short[0];
+    // шумоподавление нейросетью — перед выравниванием; null, если выключено
+    @Nullable
+    private NoiseSuppressor suppressor;
+    private int suppressorLevel = LoudnessLeveler.Params.NOISE_OFF;
 
     public LevelerAudioProcessor(@NonNull final LoudnessLeveler.Params params) {
         this.params = params;
@@ -44,16 +50,21 @@ public final class LevelerAudioProcessor extends BaseAudioProcessor {
         final AudioFormat format = inputAudioFormat;
         if (format.encoding != C.ENCODING_PCM_16BIT) {
             leveler = null;
+            releaseSuppressor();
             return;
         }
         if (leveler == null || leveler.getChannelCount() != format.channelCount
                 || sampleRate != format.sampleRate) {
             sampleRate = format.sampleRate;
             leveler = new LoudnessLeveler(format.sampleRate, format.channelCount, params);
+            releaseSuppressor(); // частота или каналы поменялись — создадим заново
         } else {
             // перемотка или новый ролик: старый звук из линии задержки не нужен,
             // а набранное усиление сохраняем, чтобы не было скачка громкости
             leveler.clearDelay();
+            if (suppressor != null) {
+                suppressor.clear();
+            }
         }
     }
 
@@ -61,6 +72,34 @@ public final class LevelerAudioProcessor extends BaseAudioProcessor {
     protected void onReset() {
         leveler = null;
         samples = new short[0];
+        releaseSuppressor();
+    }
+
+    private void releaseSuppressor() {
+        if (suppressor != null) {
+            suppressor.release();
+            suppressor = null;
+        }
+        suppressorLevel = LoudnessLeveler.Params.NOISE_OFF;
+        activeNoise = LoudnessLeveler.Params.NOISE_OFF;
+    }
+
+    /** Включает, выключает или меняет шумоподавление, если его переключили в настройках. */
+    private void updateSuppressor(final int channelCount) {
+        // «Ровная громкость» выключена — выключается и шумоподавление: звук как в оригинале
+        final int want = params.enabled ? params.noise : LoudnessLeveler.Params.NOISE_OFF;
+        if (want == suppressorLevel) {
+            return;
+        }
+        releaseSuppressor();
+        suppressorLevel = want; // даже если нейросеть не загрузится — не пытаться каждый буфер
+        if (want != LoudnessLeveler.Params.NOISE_OFF) {
+            final NativeRnNoise engine = NativeRnNoise.create(want);
+            if (engine != null) {
+                suppressor = new NoiseSuppressor(sampleRate, channelCount, engine);
+                activeNoise = want;
+            }
+        }
     }
 
     @Override
@@ -83,7 +122,12 @@ public final class LevelerAudioProcessor extends BaseAudioProcessor {
         // как SonicAudioProcessor: сэмплы в родном порядке байтов
         inputBuffer.asShortBuffer().get(samples, 0, count);
         inputBuffer.position(inputBuffer.position() + count * 2);
-        leveler.process(samples, count / leveler.getChannelCount(), sampleRate);
+        final int frames = count / leveler.getChannelCount();
+        updateSuppressor(leveler.getChannelCount());
+        if (suppressor != null) {
+            suppressor.process(samples, frames);
+        }
+        leveler.process(samples, frames, sampleRate);
         lastLeveler = leveler;
         lastAudioNanos = System.nanoTime();
         output.asShortBuffer().put(samples, 0, count);
@@ -105,5 +149,10 @@ public final class LevelerAudioProcessor extends BaseAudioProcessor {
     /** Формат звука, который плеер последним предлагал обработчику. */
     static int getLastOfferedEncoding() {
         return lastOfferedEncoding;
+    }
+
+    /** Какое шумоподавление сейчас работает: {@link LoudnessLeveler.Params#NOISE_OFF} и т.д. */
+    static int getActiveNoise() {
+        return activeNoise;
     }
 }

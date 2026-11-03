@@ -54,6 +54,18 @@ configure<ApplicationExtension> {
         System.getProperty("versionNameSuffix")?.let { versionNameSuffix = it }
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // NewPipe Leveler: шумоподавление RNNoise — нативный код только под ARM
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+        }
+    }
+
+    // NewPipe Leveler: RNNoise (см. src/main/cpp/RNNOISE_SOURCES.md)
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+        }
     }
 
     signingConfigs {

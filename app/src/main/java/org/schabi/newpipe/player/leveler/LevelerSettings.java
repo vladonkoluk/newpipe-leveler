@@ -67,8 +67,11 @@ public final class LevelerSettings {
     private static void apply(@NonNull final Context c, @NonNull final SharedPreferences prefs) {
         params.enabled = prefs.getBoolean(c.getString(R.string.leveler_enabled_key), true);
         params.clarity = prefs.getBoolean(c.getString(R.string.leveler_clarity_key), false);
-        params.voiceOnlyDb = number(prefs, c.getString(R.string.leveler_voice_only_key),
-                c.getString(R.string.leveler_voice_only_default));
+        final String noise = prefs.getString(c.getString(R.string.leveler_noise_key),
+                c.getString(R.string.leveler_noise_default));
+        params.noise = "strong".equals(noise) ? LoudnessLeveler.Params.NOISE_STRONG
+                : "soft".equals(noise) ? LoudnessLeveler.Params.NOISE_SOFT
+                : LoudnessLeveler.Params.NOISE_OFF;
         params.target = number(prefs, c.getString(R.string.leveler_target_key),
                 c.getString(R.string.leveler_target_default));
         final String strength = prefs.getString(c.getString(R.string.leveler_strength_key),
@@ -146,10 +149,23 @@ public final class LevelerSettings {
             return c.getString(R.string.leveler_status_off);
         }
         final String gain = String.format(Locale.ROOT, "%+.1f dB", lev.getGainDb());
-        return LevelerAudioProcessor.msSinceLastAudio() > 2000
+        final String main = LevelerAudioProcessor.msSinceLastAudio() > 2000
                 ? c.getString(R.string.leveler_status_idle, gain)
                 : c.getString(R.string.leveler_status_active, gain,
                         lev.getSampleRate(), lev.getChannelCount());
+        final int active = LevelerAudioProcessor.getActiveNoise();
+        final String error = NativeRnNoise.getLoadError();
+        if (params.noise != LoudnessLeveler.Params.NOISE_OFF
+                && active == LoudnessLeveler.Params.NOISE_OFF && error != null) {
+            return main + "\n" + c.getString(R.string.leveler_status_noise_error, error);
+        }
+        if (active == LoudnessLeveler.Params.NOISE_STRONG) {
+            return main + "\n" + c.getString(R.string.leveler_status_noise_strong);
+        }
+        if (active == LoudnessLeveler.Params.NOISE_SOFT) {
+            return main + "\n" + c.getString(R.string.leveler_status_noise_soft);
+        }
+        return main;
     }
 
     private static double number(@NonNull final SharedPreferences prefs,

@@ -4,8 +4,8 @@
     <string name="leveler_status_key">leveler_status_key</string>
     <string name="leveler_enabled_key">leveler_enabled_key</string>
     <string name="leveler_clarity_key">leveler_clarity_key</string>
-    <string name="leveler_voice_only_key">leveler_voice_only_key</string>
-    <string name="leveler_voice_only_default">0</string>
+    <string name="leveler_noise_key">leveler_noise_key</string>
+    <string name="leveler_noise_default">off</string>
     <string name="leveler_strength_key">leveler_strength_key</string>
     <string name="leveler_target_key">leveler_target_key</string>
     <string name="leveler_max_boost_key">leveler_max_boost_key</string>
@@ -16,19 +16,15 @@
     <string name="leveler_max_boost_default">24</string>
     <string name="leveler_ratio_default">4</string>
 
-    <string-array name="leveler_voice_only_values">
-        <item>0</item>
-        <item>6</item>
-        <item>12</item>
-        <item>20</item>
-        <item>30</item>
+    <string-array name="leveler_noise_values">
+        <item>off</item>
+        <item>soft</item>
+        <item>strong</item>
     </string-array>
-    <string-array name="leveler_voice_only_descriptions">
-        <item>@string/leveler_voice_only_0</item>
-        <item>@string/leveler_voice_only_6</item>
-        <item>@string/leveler_voice_only_12</item>
-        <item>@string/leveler_voice_only_20</item>
-        <item>@string/leveler_voice_only_30</item>
+    <string-array name="leveler_noise_descriptions">
+        <item>@string/leveler_noise_off</item>
+        <item>@string/leveler_noise_soft</item>
+        <item>@string/leveler_noise_strong</item>
     </string-array>
     <string-array name="leveler_strength_values">
         <item>ultra</item>
