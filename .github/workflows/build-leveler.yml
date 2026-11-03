@@ -29,6 +29,27 @@ jobs:
           distribution: "temurin"
           cache: 'gradle'
 
+      # DeepFilterNet (Rust, app/src/main/rust) -> app/src/main/jniLibs/<abi>/libdfjni.so,
+      # Gradle сам кладёт эти библиотеки в APK рядом с RNNoise
+      - name: Rust for Android
+        run: |
+          rustup target add aarch64-linux-android armv7-linux-androideabi
+          cargo install cargo-ndk --locked
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app/src/main/rust
+
+      - name: Build DeepFilterNet
+        working-directory: app/src/main/rust
+        env:
+          # страницы 16 КБ — для новых телефонов на Android 15+
+          RUSTFLAGS: "-C link-arg=-Wl,-z,max-page-size=16384"
+        run: |
+          echo "NDK: $ANDROID_NDK_HOME"
+          cargo ndk -t arm64-v8a -t armeabi-v7a -o ../jniLibs build --release --locked -p dfjni
+          ls -l ../jniLibs/*/
+
       - name: Build APK
         run: ./gradlew assembleContinuous --stacktrace
 
@@ -37,6 +58,15 @@ jobs:
           VERSION_NAME="$(jq -r ".elements[0].versionName" app/build/outputs/apk/continuous/output-metadata.json)"
           echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
           mv app/build/outputs/apk/continuous/*.apk NewPipeLeveler.apk
+
+      - name: Check native libraries in APK
+        run: |
+          unzip -l NewPipeLeveler.apk | grep -E 'lib/.*\.so'
+          for abi in arm64-v8a armeabi-v7a; do
+            for lib in rnnoise_soft rnnoise_strong dfjni; do
+              unzip -l NewPipeLeveler.apk | grep -q "lib/$abi/lib$lib.so" || { echo "нет lib/$abi/lib$lib.so"; exit 1; }
+            done
+          done
 
       - name: Upload APK
         uses: actions/upload-artifact@v7

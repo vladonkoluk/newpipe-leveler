@@ -69,7 +69,8 @@ public final class LevelerSettings {
         params.clarity = prefs.getBoolean(c.getString(R.string.leveler_clarity_key), false);
         final String noise = prefs.getString(c.getString(R.string.leveler_noise_key),
                 c.getString(R.string.leveler_noise_default));
-        params.noise = "strong".equals(noise) ? LoudnessLeveler.Params.NOISE_STRONG
+        params.noise = "dfn".equals(noise) ? LoudnessLeveler.Params.NOISE_DFN
+                : "strong".equals(noise) ? LoudnessLeveler.Params.NOISE_STRONG
                 : "soft".equals(noise) ? LoudnessLeveler.Params.NOISE_SOFT
                 : LoudnessLeveler.Params.NOISE_OFF;
         params.keepSpeech = number(prefs, c.getString(R.string.leveler_keep_speech_key),
@@ -160,6 +161,9 @@ public final class LevelerSettings {
         if (params.noise != LoudnessLeveler.Params.NOISE_OFF
                 && active == LoudnessLeveler.Params.NOISE_OFF && error != null) {
             return main + "\n" + c.getString(R.string.leveler_status_noise_error, error);
+        }
+        if (active == LoudnessLeveler.Params.NOISE_DFN) {
+            return main + "\n" + c.getString(R.string.leveler_status_noise_dfn);
         }
         if (active == LoudnessLeveler.Params.NOISE_STRONG) {
             return main + "\n" + c.getString(R.string.leveler_status_noise_strong);

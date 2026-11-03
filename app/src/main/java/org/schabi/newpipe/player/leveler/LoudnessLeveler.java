@@ -66,6 +66,8 @@ public final class LoudnessLeveler {
         public static final int NOISE_SOFT = 1;
         /** Шумоподавление «Сильное»: новая RNNoise (модель little) — шум почти до тишины. */
         public static final int NOISE_STRONG = 2;
+        /** Шумоподавление DeepFilterNet3 — лучшее качество голоса, но тяжелее для процессора. */
+        public static final int NOISE_DFN = 3;
         /**
          * Уровень шумоподавления. Само шумоподавление — нейросеть, её подключает
          * {@link LevelerAudioProcessor} перед выравниванием (см. {@link NoiseSuppressor}).

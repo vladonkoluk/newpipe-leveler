@@ -14,6 +14,7 @@
     <string name="leveler_noise_off">Off</string>
     <string name="leveler_noise_soft">Soft — noise noticeably quieter, voice almost unchanged</string>
     <string name="leveler_noise_strong">Strong — street noise almost to silence, voice slightly artificial</string>
+    <string name="leveler_noise_dfn">DeepFilterNet — street noise quieter even during speech, cleanest voice; higher CPU load. Best with «Keep speech» 30–50%</string>
     <string name="leveler_keep_speech_title">Protect speech</string>
     <string name="leveler_keep_speech_0" formatted="false">Off — maximum noise removal, but in loud noise parts of speech may disappear</string>
     <string name="leveler_keep_speech_30" formatted="false">Weak — up to 30%: less street noise along with the voice, a bit more speech may disappear</string>
@@ -21,6 +22,7 @@
     <string name="leveler_keep_speech_70" formatted="false">Strong — up to 70%: speech almost never disappears, noise in pauses still removed</string>
     <string name="leveler_status_noise_soft">Noise suppression: soft</string>
     <string name="leveler_status_noise_strong">Noise suppression: strong</string>
+    <string name="leveler_status_noise_dfn">Noise suppression: DeepFilterNet</string>
     <string name="leveler_status_noise_error">Noise suppression failed to start: %1$s</string>
     <string name="leveler_clarity_title">Clear speech</string>
     <string name="leveler_clarity_summary">Voice louder than music and background: removes rumble and bass, emphasizes speech frequencies, lowers wide stereo background</string>

@@ -95,8 +95,14 @@ public final class LevelerAudioProcessor extends BaseAudioProcessor {
         suppressorLevel = want; // даже если нейросеть не загрузится — не пытаться каждый буфер
         if (want != LoudnessLeveler.Params.NOISE_OFF) {
             final NativeRnNoise engine = NativeRnNoise.create(want);
+            // у DeepFilterNet для «Беречь речь» речь распознаёт RNNoise: оценка DeepFilterNet
+            // (SNR кадра) в громком шуме низкая там, где он глушит речь, и подмешивание не
+            // срабатывает. Если RNNoise не загрузится — работаем без отдельного детектора
+            final NativeRnNoise detector = engine != null
+                    && want == LoudnessLeveler.Params.NOISE_DFN
+                    ? NativeRnNoise.create(LoudnessLeveler.Params.NOISE_STRONG) : null;
             if (engine != null) {
-                suppressor = new NoiseSuppressor(sampleRate, channelCount, engine);
+                suppressor = new NoiseSuppressor(sampleRate, channelCount, engine, detector);
                 activeNoise = want;
             }
         }

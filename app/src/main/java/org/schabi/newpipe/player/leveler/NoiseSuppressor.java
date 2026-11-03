@@ -1,8 +1,10 @@
 package org.schabi.newpipe.player.leveler;
 
+import androidx.annotation.Nullable;
+
 /**
- * Шумоподавление нейросетью RNNoise: убирает уличный шум, гул, ветер, шаги и прочие помехи,
- * оставляя голос.
+ * Шумоподавление нейросетью (RNNoise или DeepFilterNet3): убирает уличный шум, гул, ветер,
+ * шаги и прочие помехи, оставляя голос.
  *
  * <p>Звук сводится в моно (голос почти всегда в центре), пересчитывается в 48 кГц (RNNoise
  * работает только с этой частотой), обрабатывается кадрами по 10 мс (480 сэмплов),
@@ -38,6 +40,11 @@ final class NoiseSuppressor {
 
     private final int channels;
     private final Engine engine;
+    // отдельный детектор речи для «Беречь речь» (null — оценку речи даёт сама нейросеть).
+    // Нужен для DeepFilterNet: его SNR кадра в громком шуме низкое как раз там, где он глушит речь
+    @Nullable
+    private final Engine detector;
+    private final float[] detectorFrame = new float[FRAME];
     private final Resampler toModel;   // частота звука -> 48 кГц (null, если уже 48 кГц)
     private final Resampler fromModel; // 48 кГц -> частота звука
     private final float[] frame = new float[FRAME];
@@ -63,8 +70,18 @@ final class NoiseSuppressor {
     private int hold;
     private volatile double keepSpeech;
     NoiseSuppressor(final int sampleRate, final int channelCount, final Engine engine) {
+        this(sampleRate, channelCount, engine, null);
+    }
+
+    /**
+     * @param detector нейросеть, которая только оценивает, звучит ли речь (её звук не идёт
+     *                 на выход), или null — тогда оценку даёт {@code engine}
+     */
+    NoiseSuppressor(final int sampleRate, final int channelCount, final Engine engine,
+                    @Nullable final Engine detector) {
         channels = channelCount;
         this.engine = engine;
+        this.detector = detector;
         if (sampleRate == RATE) {
             toModel = null;
             fromModel = null;
@@ -126,6 +143,9 @@ final class NoiseSuppressor {
 
     void release() {
         engine.release();
+        if (detector != null) {
+            detector.release();
+        }
     }
 
     /**
@@ -168,9 +188,17 @@ final class NoiseSuppressor {
         System.arraycopy(frame, 0, dryHist[dryPos], 0, FRAME);
         dryPos = dryPos + 1 == dryHist.length ? 0 : dryPos + 1;
         final float[] dry = dryHist[dryPos]; // самый старый
-        final float vad = engine.process(frame);
+        float vad;
+        if (detector != null) {
+            System.arraycopy(frame, 0, detectorFrame, 0, FRAME);
+            vad = detector.process(detectorFrame);
+            engine.process(frame);
+        } else {
+            vad = engine.process(frame);
+        }
         speechProbability = vad;
-        // оценка речи для отдаваемого кадра — на кадр раньше текущей (у новой RNNoise)
+        // оценка речи для отдаваемого кадра: нейросеть отдаёт кадр, пришедший delayFrames
+        // назад, а оценке речи нужен ещё кадр опережения — берём её delayFrames − 1 назад
         final float vadOut = vadHist[vadPos];
         vadHist[vadPos] = vad;
         vadPos = vadPos + 1 == vadHist.length ? 0 : vadPos + 1;

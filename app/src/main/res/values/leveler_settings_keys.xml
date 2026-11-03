@@ -34,11 +34,13 @@
         <item>off</item>
         <item>soft</item>
         <item>strong</item>
+        <item>dfn</item>
     </string-array>
     <string-array name="leveler_noise_descriptions">
         <item>@string/leveler_noise_off</item>
         <item>@string/leveler_noise_soft</item>
         <item>@string/leveler_noise_strong</item>
+        <item>@string/leveler_noise_dfn</item>
     </string-array>
     <string-array name="leveler_strength_values">
         <item>ultra</item>

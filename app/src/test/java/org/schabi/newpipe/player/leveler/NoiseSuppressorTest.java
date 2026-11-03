@@ -9,7 +9,8 @@ import java.util.Random;
 
 /**
  * Пересчёт частоты и буферы шумоподавления — без нейросети: вместо неё «пустышка»,
- * которая звук не меняет. Сама нейросеть RNNoise — нативная, её здесь не запустить.
+ * которая звук не меняет. Сами нейросети (RNNoise, DeepFilterNet) — нативные,
+ * их здесь не запустить.
  */
 // CHECKSTYLE:OFF
 public class NoiseSuppressorTest {
@@ -64,9 +65,57 @@ public class NoiseSuppressorTest {
         }
     }
 
+    /** Как DeepFilterNet: задержка 3 кадра, всё глушит, речь не распознаёт (оценка 0). */
+    private static final class DeafSilencer implements NoiseSuppressor.Engine {
+        boolean released;
+
+        @Override
+        public float process(final float[] frame) {
+            java.util.Arrays.fill(frame, 0);
+            return 0;
+        }
+
+        @Override
+        public int delayFrames() {
+            return 3;
+        }
+
+        @Override
+        public void release() {
+            released = true;
+        }
+    }
+
+    /** Отдельный детектор речи: звук портит (на выход он идти не должен), речь «слышит». */
+    private static final class Detector implements NoiseSuppressor.Engine {
+        boolean released;
+
+        @Override
+        public float process(final float[] frame) {
+            java.util.Arrays.fill(frame, 12345);
+            return 0.99f;
+        }
+
+        @Override
+        public int delayFrames() {
+            return 2;
+        }
+
+        @Override
+        public void release() {
+            released = true;
+        }
+    }
+
     private static double[] runEngine(final NoiseSuppressor.Engine engine, final double keep,
                                       final double[] mono) {
-        final NoiseSuppressor ns = new NoiseSuppressor(48000, 1, engine);
+        return runEngine(engine, null, keep, mono);
+    }
+
+    private static double[] runEngine(final NoiseSuppressor.Engine engine,
+                                      final NoiseSuppressor.Engine detector, final double keep,
+                                      final double[] mono) {
+        final NoiseSuppressor ns = new NoiseSuppressor(48000, 1, engine, detector);
         ns.setKeepSpeech(keep);
         final double[] out = new double[mono.length];
         final short[] buf = new short[1000];
@@ -96,6 +145,33 @@ public class NoiseSuppressorTest {
             err = Math.max(err, Math.abs(y[i] - 0.7 * x[i - d]));
         }
         assertTrue("возвращено 70% оригинала с задержкой " + d + "; отклонение " + err, err < 2);
+    }
+
+    @Test
+    public void separateDetectorDrivesKeepSpeech() {
+        // DeepFilterNet сам речь не распознаёт, её распознаёт детектор: возвращается 70%
+        // оригинала, выровненного по задержке DeepFilterNet (3 кадра); звук детектора на выход
+        // не попадает
+        final double[] x = tones(48000, 2);
+        final DeafSilencer engine = new DeafSilencer();
+        final Detector detector = new Detector();
+        final double[] y = runEngine(engine, detector, 0.7, x);
+        final int d = new NoiseSuppressor(48000, 1, new DeafSilencer()).bufferDelay()
+                + 3 * NoiseSuppressor.FRAME;
+        double err = 0;
+        for (int i = 24000; i < x.length; i++) {
+            err = Math.max(err, Math.abs(y[i] - 0.7 * x[i - d]));
+        }
+        assertTrue("возвращено 70% оригинала с задержкой " + d + "; отклонение " + err, err < 2);
+        // без детектора та же нейросеть речь не бережёт
+        double peak = 0;
+        for (final double v : runEngine(new DeafSilencer(), 0.7, x)) {
+            peak = Math.max(peak, Math.abs(v));
+        }
+        assertEquals("без детектора подмешивания нет", 0, peak, 0.5);
+        final NoiseSuppressor ns = new NoiseSuppressor(48000, 1, engine, detector);
+        ns.release();
+        assertTrue("обе нейросети освобождены", engine.released && detector.released);
     }
 
     @Test

@@ -32,3 +32,7 @@ node_modules/
 !*.xcodeproj/project.xcworkspace/
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
+
+# NewPipe Leveler: сборка DeepFilterNet (Rust) и её результат (собирается в CI)
+app/src/main/rust/target/
+app/src/main/jniLibs/
