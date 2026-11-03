@@ -66,6 +66,7 @@ public final class LevelerSettings {
 
     private static void apply(@NonNull final Context c, @NonNull final SharedPreferences prefs) {
         params.enabled = prefs.getBoolean(c.getString(R.string.leveler_enabled_key), true);
+        params.clarity = prefs.getBoolean(c.getString(R.string.leveler_clarity_key), false);
         params.target = number(prefs, c.getString(R.string.leveler_target_key),
                 c.getString(R.string.leveler_target_default));
         final String strength = prefs.getString(c.getString(R.string.leveler_strength_key),
@@ -92,6 +93,7 @@ public final class LevelerSettings {
         p.agcTime = 3;
         p.pauseRel = 3;
         p.compRel = 0.25;
+        p.makeupExtra = 1;
         if (ULTRA.equals(strength)) {
             // предельно: окно 30 мс, слабая защита пауз — фон почти как голос
             p.levTime = 0.03;
@@ -101,6 +103,7 @@ public final class LevelerSettings {
             p.agcTime = 1;
             p.compRel = 0.05;
             p.pauseRel = 1;
+            p.makeupExtra = 6; // чтобы общий уровень остался выбранным
         } else if (EXTREME.equals(strength)) {
             // окно 50 мс, компрессор чуть ниже цели
             p.levTime = 0.05;
@@ -109,12 +112,14 @@ public final class LevelerSettings {
             p.compAbove = -2;
             p.agcTime = 1.5;
             p.compRel = 0.1;
+            p.makeupExtra = 5;
         } else if (MAX_STRENGTH.equals(strength)) {
             // быстрее реагирует (окно 0.1 с, 20/100 мс) и прижимает всё выше цели
             p.levTime = 0.1;
             p.levAtt = 0.02;
             p.levRel = 0.1;
             p.compAbove = 0;
+            p.makeupExtra = 2;
         } else {
             p.strength = number(prefs, c.getString(R.string.leveler_strength_key),
                     c.getString(R.string.leveler_strength_default)) / 100;

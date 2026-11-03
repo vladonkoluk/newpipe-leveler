@@ -3,6 +3,7 @@
 <resources translatable="false">
     <string name="leveler_status_key">leveler_status_key</string>
     <string name="leveler_enabled_key">leveler_enabled_key</string>
+    <string name="leveler_clarity_key">leveler_clarity_key</string>
     <string name="leveler_strength_key">leveler_strength_key</string>
     <string name="leveler_target_key">leveler_target_key</string>
     <string name="leveler_max_boost_key">leveler_max_boost_key</string>

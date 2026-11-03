@@ -58,6 +58,10 @@ public final class LoudnessLeveler {
         public volatile double compRel = 0.25;
         /** Время реакции детектора компрессора, сек (меньше — ловит более короткие звуки). */
         public volatile double envTime = 0.02;
+        /** Сколько dB сверх ослабления компрессором можно вернуть подтяжкой уровня. */
+        public volatile double makeupExtra = 1;
+        /** «Разборчивая речь»: голос громче музыки и фона (см. {@link SpeechClarity}). */
+        public volatile boolean clarity = false;
     }
 
     /** Шаг управляющих вычислений, сэмплов. */
@@ -123,6 +127,67 @@ public final class LoudnessLeveler {
         final Biquad hp = new Biquad((1 + cw) / 2, -(1 + cw), (1 + cw) / 2,
                 1 + al, -2 * cw, 1 - al);
         return new Biquad[]{shelf, hp};
+    }
+
+    /**
+     * «Разборчивая речь», как «улучшение диалогов» в телевизорах:
+     * <ul>
+     *     <li>стерео-фон по краям тише на 12 dB — голос почти всегда в центре, а музыка и шум
+     *     часто разнесены по краям;</li>
+     *     <li>срез ниже 150 Гц — гул и басы, в которых почти нет речи, но которые её забивают;</li>
+     *     <li>+6 dB около 2.5 кГц — частоты, от которых зависит разборчивость.</li>
+     * </ul>
+     * Работает до выравнивания, так что общая громкость остаётся прежней.
+     * Включается и выключается плавно, за ~10 мс.
+     */
+    static final class SpeechClarity {
+        /** Во сколько раз тише стерео-фон по краям (−12 dB). */
+        static final double SIDE_GAIN = 0.25;
+
+        private final int channels;
+        private final Biquad[] hp;
+        private final Biquad[] presence;
+        private final double cMix;
+        private final double[] wet;
+        private double mix;
+
+        SpeechClarity(final double sr, final int channelCount) {
+            channels = channelCount;
+            hp = new Biquad[channelCount];
+            presence = new Biquad[channelCount];
+            for (int c = 0; c < channelCount; c++) {
+                double w = 2 * Math.PI * 150 / sr;
+                double cw = Math.cos(w);
+                double al = Math.sin(w) / (2 * Math.sqrt(0.5));
+                hp[c] = new Biquad((1 + cw) / 2, -(1 + cw), (1 + cw) / 2, 1 + al, -2 * cw, 1 - al);
+                w = 2 * Math.PI * 2500 / sr;
+                cw = Math.cos(w);
+                al = Math.sin(w) / (2 * 0.9);
+                final double a = Math.pow(10, 6.0 / 40);
+                presence[c] = new Biquad(1 + al * a, -2 * cw, 1 - al * a,
+                        1 + al / a, -2 * cw, 1 - al / a);
+            }
+            cMix = coef(0.01, sr);
+            wet = new double[channelCount];
+        }
+
+        /** Обрабатывает один кадр (все каналы) на месте. */
+        void process(final double[] frame, final boolean on) {
+            mix += ((on ? 1 : 0) - mix) * cMix;
+            if (channels == 2) {
+                final double m = (frame[0] + frame[1]) / 2;
+                final double side = (frame[0] - frame[1]) / 2 * SIDE_GAIN;
+                wet[0] = m + side;
+                wet[1] = m - side;
+            } else {
+                System.arraycopy(frame, 0, wet, 0, channels);
+            }
+            // фильтры работают всегда, чтобы при включении не было щелчка от пустого состояния
+            for (int c = 0; c < channels; c++) {
+                final double y = presence[c].run(hp[c].run(wet[c]));
+                frame[c] += (y - frame[c]) * mix;
+            }
+        }
     }
 
     /** Считает нужное усиление (dB) по громкости. */
@@ -221,6 +286,7 @@ public final class LoudnessLeveler {
     private final int sampleRate;
     private final int channels;
     private final Biquad[][] kw;
+    private final Biquad[][] kwOut; // K-взвешивание итогового звука — для подтяжки уровня
     private final double cMom;
     private double cEnv;
     private double cEnvFor = -1;
@@ -238,6 +304,11 @@ public final class LoudnessLeveler {
     private double levSum;
     private int levPos;
     private double compDb;
+    // громкость на выходе (до лимитера) за 0.4 с и подтяжка к цели после сжатия
+    private double outPow;
+    private double makeupDb;
+    private double compAvgDb; // сколько в среднем убирает компрессор на речи
+    private double outLongDb = Double.NaN; // громкость итогового звука за ~3 с
     private double gTarget = 1;
     private double g = 1;
     private double mix = 1;
@@ -248,6 +319,8 @@ public final class LoudnessLeveler {
     private final float[][] preRing;
     private int prePos;
     private final double[] xs;
+    private final double[] frame;
+    private final SpeechClarity clarity;
 
     // лимитер: задержка L, скользящий минимум по L+1, скользящее среднее по L
     private final int lookahead;
@@ -271,8 +344,10 @@ public final class LoudnessLeveler {
         this.sampleRate = sampleRate;
         channels = channelCount;
         kw = new Biquad[channelCount][];
+        kwOut = new Biquad[channelCount][];
         for (int c = 0; c < channelCount; c++) {
             kw[c] = kWeighting(sampleRate);
+            kwOut[c] = kWeighting(sampleRate);
         }
         final double cr = (double) sampleRate / CTRL;
         cMom = coef(0.4, sampleRate);
@@ -287,6 +362,8 @@ public final class LoudnessLeveler {
         preDelay = Math.max(1, (int) Math.round(0.02 * sampleRate));
         preRing = new float[channelCount][preDelay];
         xs = new double[channelCount];
+        frame = new double[channelCount];
+        clarity = new SpeechClarity(sampleRate, channelCount);
         lookahead = Math.max(1, (int) Math.round(0.005 * sampleRate));
         yRing = new float[channelCount][lookahead];
         xRing = new float[channelCount][lookahead];
@@ -389,8 +466,23 @@ public final class LoudnessLeveler {
             red = s * (over + knee / 2) * (over + knee / 2) / (2 * knee);
         }
         compDb += (red - compDb) * (red < compDb ? cCompAtt : coef(p.compRel, ctrlRate));
-        gTarget = fromDb(levelDb + compDb);
-        gainDb = levelDb + compDb;
+        // В сильных режимах сжатие и быстрое выравнивание делали звук тише выбранного уровня
+        // на 2–6 dB. Меряем среднюю (за ~3 с) громкость итогового звука и медленно подтягиваем
+        // её к цели. Подтяжка не больше того, что в среднем убрал компрессор, плюс запас режима
+        // (makeupExtra): поэтому одинакова в тихих и громких сценах и не раздувает тихие ролики.
+        // Короткие хлопки на среднюю громкость почти не влияют; паузы и тишину не меряем.
+        final double outDb = -0.691 + toDb(outPow);
+        // резкие звуки (компрессор сильно прижимает или на выходе намного громче цели)
+        // не учитываем, иначе они раскачивают подтяжку
+        if (lev > p.gate && mom > -50 && compDb > -6 && outDb < p.target + 6) {
+            compAvgDb += (compDb - compAvgDb) * coef(2, ctrlRate);
+            outLongDb = Double.isNaN(outLongDb) ? outDb
+                    : outLongDb + (outDb - outLongDb) * coef(3, ctrlRate);
+            makeupDb = clamp(makeupDb + (p.target - outLongDb) * coef(3, ctrlRate),
+                    0, Math.min(12, Math.max(0, -compAvgDb) + p.makeupExtra));
+        }
+        gTarget = fromDb(levelDb + compDb + makeupDb);
+        gainDb = levelDb + compDb + makeupDb;
     }
 
     /**
@@ -407,10 +499,21 @@ public final class LoudnessLeveler {
         final int len = lookahead;
         for (int f = 0; f < frames; f++) {
             final int base = f * ch;
+            for (int c = 0; c < ch; c++) {
+                frame[c] = buf[base + c] / 32768.0;
+            }
+            // «Ровная громкость» выключена — выключается и «Разборчивая речь»: звук как в оригинале
+            clarity.process(frame, p.clarity && p.enabled);
+            // xs — звук на 20 мс позже, к нему и применяется усиление
+            for (int c = 0; c < ch; c++) {
+                xs[c] = preRing[c][prePos];
+                preRing[c][prePos] = (float) frame[c];
+            }
+            prePos = prePos + 1 == preDelay ? 0 : prePos + 1;
+            // громкость меряется по звуку на 20 мс раньше, чем он прозвучит
             double pk = 0;
             for (int c = 0; c < ch; c++) {
-                final double x = buf[base + c] / 32768.0;
-                final double k = kw[c][1].run(kw[c][0].run(x));
+                final double k = kw[c][1].run(kw[c][0].run(frame[c]));
                 pk += k * k;
             }
             momPow += (pk - momPow) * cMom;
@@ -428,11 +531,8 @@ public final class LoudnessLeveler {
 
             double peak = 0;
             for (int c = 0; c < ch; c++) {
-                xs[c] = preRing[c][prePos];
-                preRing[c][prePos] = (float) (buf[base + c] / 32768.0);
                 peak = Math.max(peak, Math.abs(xs[c] * g));
             }
-            prePos = prePos + 1 == preDelay ? 0 : prePos + 1;
             final double req = peak > ceil ? ceil / peak : 1;
             final double h = slidingMin(req);
             h2 = Math.min(h, h2 + (1 - h2) * cLimRel);
@@ -442,6 +542,7 @@ public final class LoudnessLeveler {
 
             mix += (mixTarget - mix) * cMix;
             final double m = mix;
+            double outPk = 0;
             for (int c = 0; c < ch; c++) {
                 final double x = xs[c];
                 final double yd = yRing[c][pos];
@@ -453,7 +554,10 @@ public final class LoudnessLeveler {
                     y = clamp(y, -ceil, ceil);
                 }
                 buf[base + c] = (short) Math.round(clamp(y * 32768, -32768, 32767));
+                final double k = kwOut[c][1].run(kwOut[c][0].run(y));
+                outPk += k * k;
             }
+            outPow += (outPk - outPow) * cMom;
             pos = pos + 1 == len ? 0 : pos + 1;
             if (pos == 0) { // пересчёт суммы против накопления ошибки
                 double s = 0;

@@ -177,6 +177,7 @@ public class LoudnessLevelerTest {
         p.levRel = 0.1;
         p.compAbove = 0;
         p.ratio = 20;
+        p.makeupExtra = 2;
         return p;
     }
 
@@ -191,6 +192,7 @@ public class LoudnessLevelerTest {
         p.agcTime = ultra ? 1 : 1.5;
         p.compRel = ultra ? 0.05 : 0.1;
         p.pauseRel = ultra ? 1 : 3;
+        p.makeupExtra = ultra ? 6 : 5;
         return p;
     }
 
@@ -271,7 +273,8 @@ public class LoudnessLevelerTest {
     }
 
     /**
-     * Насколько резкие звуки громче обычной речи на выходе, dB: {хлопки, выкрики}.
+     * Насколько резкие звуки громче обычной речи на выходе, dB: {хлопки, выкрики, громкие слоги
+     * обычной речи}. Последнее — та же метрика на участках без событий: с ней и сравниваем.
      * Речь -20 LUFS, каждые 2.1 с хлопок (40 мс, пик 0.9) или выкрик (0.3 с, на 14 dB громче).
      * Громкость события — самое громкое окно 50 мс, речи — медиана окон 400 мс.
      */
@@ -319,14 +322,27 @@ public class LoudnessLevelerTest {
             }
             (e[1] == 0 ? claps : shouts).add(m - speechDb);
         }
-        return new double[]{mean(claps), mean(shouts)};
+        // та же метрика (самые громкие 50 мс за 0.35 с) на обычной речи посередине между событиями
+        final List<Double> syllables = new ArrayList<>();
+        for (final double[] e : events) {
+            final double t0 = e[0] + 1.05;
+            if (t0 + 0.35 < (double) y.length / SR) {
+                double m = -200;
+                for (int s = (int) (t0 * SR); s < (t0 + 0.35) * SR; s += (int) (0.005 * SR)) {
+                    m = Math.max(m, winDb(y, s, n50));
+                }
+                syllables.add(m - speechDb);
+            }
+        }
+        return new double[]{mean(claps), mean(shouts), mean(syllables)};
     }
 
     @Test
     public void suddenClapsAndShoutsDoNotStickOut() {
+        // на входе: хлопок +7 dB, выкрик +20 dB над речью; громкие слоги речи сами дают ~+6
         final double[] r = transientsOverSpeech(maxParams());
-        assertTrue("хлопок над речью " + r[0] + " dB", r[0] <= 2);
-        assertTrue("выкрик над речью " + r[1] + " dB", r[1] <= 5.5);
+        assertTrue("хлопок " + r[0] + " dB, громкие слоги " + r[2], r[0] <= r[2]);
+        assertTrue("выкрик " + r[1] + " dB, громкие слоги " + r[2], r[1] <= r[2] + 2);
     }
 
     @Test
@@ -343,6 +359,114 @@ public class LoudnessLevelerTest {
                 peak = Math.max(peak, Math.abs(v));
             }
             assertTrue("пик " + 20 * Math.log10(peak), 20 * Math.log10(peak) <= -0.95);
+        }
+    }
+
+    // ---------- «Разборчивая речь» ----------
+
+    private static double[] highpass(final double[] x, final double fc) {
+        final double w = 2 * Math.PI * fc / SR;
+        final double cw = Math.cos(w);
+        final double al = Math.sin(w) / Math.sqrt(2);
+        return filter(x, (1 + cw) / 2, -(1 + cw), (1 + cw) / 2, 1 + al, -2 * cw, 1 - al);
+    }
+
+    private static double[] lowpass(final double[] x, final double fc) {
+        final double w = 2 * Math.PI * fc / SR;
+        final double cw = Math.cos(w);
+        final double al = Math.sin(w) / Math.sqrt(2);
+        return filter(x, (1 - cw) / 2, 1 - cw, (1 - cw) / 2, 1 + al, -2 * cw, 1 - al);
+    }
+
+    /** Голос: «речь» в полосе 300–3400 Гц, одинаковая в обоих каналах (в центре). */
+    private static double[] voice(final double seconds) {
+        return scaleTo(lowpass(highpass(speech(seconds, -20, 21), 300), 3400), -20);
+    }
+
+    /** Музыка/фон: свой шум в каждом канале (широкое стерео), с сильными басами. */
+    private static double[] music(final double seconds, final long seed) {
+        final java.util.Random rnd = new java.util.Random(seed);
+        final double[] w = new double[(int) Math.round(seconds * SR)];
+        for (int i = 0; i < w.length; i++) {
+            w[i] = rnd.nextDouble() * 2 - 1;
+        }
+        final double[] bass = lowpass(w, 150);
+        final double[] mid = highpass(w, 150);
+        final double[] out = new double[w.length];
+        for (int i = 0; i < w.length; i++) {
+            out[i] = 4 * bass[i] + 0.5 * mid[i];
+        }
+        return scaleTo(out, -20);
+    }
+
+    /** Мощность стерео-пары с K-взвешиванием, dB. */
+    private static double powerDb(final double[] l, final double[] r) {
+        double p = 0;
+        for (final double[] ch : new double[][]{kFilter(l), kFilter(r)}) {
+            for (int i = SR; i < ch.length; i++) {
+                p += ch[i] * ch[i];
+            }
+        }
+        return 10 * Math.log10(p);
+    }
+
+    /** Прогоняет стерео-пару только через «Разборчивую речь» (она линейная). */
+    private static double[][] clarify(final double[] l, final double[] r) {
+        final LoudnessLeveler.SpeechClarity sc = new LoudnessLeveler.SpeechClarity(SR, 2);
+        final double[][] out = {new double[l.length], new double[r.length]};
+        final double[] fr = new double[2];
+        for (int i = 0; i < l.length; i++) {
+            fr[0] = l[i];
+            fr[1] = r[i];
+            sc.process(fr, true);
+            out[0][i] = fr[0];
+            out[1][i] = fr[1];
+        }
+        return out;
+    }
+
+    @Test
+    public void clarityMakesVoiceLouderThanMusic() {
+        final double[] v = voice(20);
+        final double[] ml = music(20, 31);
+        final double[] mr = music(20, 32);
+        final double before = powerDb(v, v) - powerDb(ml, mr);
+        final double[][] cv = clarify(v, v);
+        final double[][] cm = clarify(ml, mr);
+        final double after = powerDb(cv[0], cv[1]) - powerDb(cm[0], cm[1]);
+        assertTrue("голос громче музыки: было " + before + " dB, стало " + after,
+                after - before >= 5);
+    }
+
+    @Test
+    public void clarityKeepsLevelingAndPeaks() {
+        final LoudnessLeveler.Params params = maxParams();
+        params.clarity = true;
+        for (final double lvl : new double[]{-34, -8}) {
+            // голос в полосе речи: у тестовой «речи» много басов, которых у настоящей нет
+            final double[] y = process(scaleTo(voice(30), lvl), params);
+            assertEquals("ролик " + lvl + " LUFS с разборчивой речью", -16,
+                    integrated(seg(y, 10, 30)), 2.5);
+        }
+        final double[] y = process(concat(speech(15, -32, 1), speech(15, -6, 2)), params);
+        double peak = 0;
+        for (final double v : y) {
+            peak = Math.max(peak, Math.abs(v));
+        }
+        assertTrue("пик " + 20 * Math.log10(peak), 20 * Math.log10(peak) <= -0.95);
+    }
+
+    @Test
+    public void strongModesKeepTheChosenLevel() {
+        // сжатие в сильных режимах не должно делать звук тише выбранного уровня (-16 LUFS)
+        final LoudnessLeveler.Params[] modes = {maxParams(), extremeParams(false),
+                extremeParams(true)};
+        for (final LoudnessLeveler.Params params : modes) {
+            for (final double lvl : new double[]{-30, -8}) {
+                final double[] y = process(scaleTo(voice(30), lvl), params);
+                assertEquals("режим со сжатием " + params.ratio + ", ролик " + lvl, -16,
+                        integrated(seg(y, 10, 30)), 2.5);
+            }
         }
     }
 

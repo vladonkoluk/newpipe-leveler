@@ -107,6 +107,15 @@
             app:singleLineTitle="false"
             app:iconSpaceReserved="false" />
 
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:dependency="@string/leveler_enabled_key"
+            android:key="@string/leveler_clarity_key"
+            android:summary="@string/leveler_clarity_summary"
+            android:title="@string/leveler_clarity_title"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+
         <ListPreference
             android:defaultValue="@string/leveler_strength_default"
             android:dependency="@string/leveler_enabled_key"

@@ -10,6 +10,8 @@
     <string name="leveler_status_off">Выключено — звук как в оригинале</string>
     <string name="leveler_status_active">Работает: поправка %1$s · %2$d Гц · каналов: %3$d</string>
     <string name="leveler_status_idle">Сейчас ничего не играет. Последняя поправка: %1$s</string>
+    <string name="leveler_clarity_title">Разборчивая речь</string>
+    <string name="leveler_clarity_summary">Голос громче музыки и фона: убирает гул и басы, подчёркивает частоты речи, приглушает широкий стерео-фон</string>
     <string name="leveler_strength_title">Сила выравнивания</string>
     <string name="leveler_target_title">Уровень громкости</string>
     <string name="leveler_max_boost_title">Усиление тихого</string>
