@@ -16,6 +16,7 @@
     <string name="leveler_noise_strong">Сильное — уличный шум почти до тишины, голос чуть искусственнее</string>
     <string name="leveler_keep_speech_title">Беречь речь</string>
     <string name="leveler_keep_speech_0" formatted="false">Выкл — шум убирается сильнее всего, но в громком шуме пропадают куски речи</string>
+    <string name="leveler_keep_speech_30" formatted="false">Слабо — до 30%: меньше уличного шума вместе с голосом, речи может пропадать чуть больше</string>
     <string name="leveler_keep_speech_50" formatted="false">Обычно — там, где слышна речь, возвращается до 50% оригинала</string>
     <string name="leveler_keep_speech_70" formatted="false">Сильно — до 70%: речь почти не пропадает, шум в паузах всё равно убран</string>
     <string name="leveler_status_noise_soft">Шумоподавление: мягкое</string>

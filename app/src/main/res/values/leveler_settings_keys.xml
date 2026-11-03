@@ -20,11 +20,13 @@
 
     <string-array name="leveler_keep_speech_values">
         <item>0</item>
+        <item>30</item>
         <item>50</item>
         <item>70</item>
     </string-array>
     <string-array name="leveler_keep_speech_descriptions">
         <item>@string/leveler_keep_speech_0</item>
+        <item>@string/leveler_keep_speech_30</item>
         <item>@string/leveler_keep_speech_50</item>
         <item>@string/leveler_keep_speech_70</item>
     </string-array>

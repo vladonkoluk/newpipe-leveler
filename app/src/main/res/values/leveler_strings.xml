@@ -16,6 +16,7 @@
     <string name="leveler_noise_strong">Strong — street noise almost to silence, voice slightly artificial</string>
     <string name="leveler_keep_speech_title">Protect speech</string>
     <string name="leveler_keep_speech_0" formatted="false">Off — maximum noise removal, but in loud noise parts of speech may disappear</string>
+    <string name="leveler_keep_speech_30" formatted="false">Weak — up to 30%: less street noise along with the voice, a bit more speech may disappear</string>
     <string name="leveler_keep_speech_50" formatted="false">Normal — return up to 50% of the original where speech is heard</string>
     <string name="leveler_keep_speech_70" formatted="false">Strong — up to 70%: speech almost never disappears, noise in pauses still removed</string>
     <string name="leveler_status_noise_soft">Noise suppression: soft</string>
