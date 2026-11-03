@@ -60,6 +60,8 @@ public final class LoudnessLeveler {
         public volatile double envTime = 0.02;
         /** Сколько dB сверх ослабления компрессором можно вернуть подтяжкой уровня. */
         public volatile double makeupExtra = 1;
+        /** «Только голос»: насколько приглушать всё, что не голос, dB; 0 — выкл. */
+        public volatile double voiceOnlyDb = 0;
         /** «Разборчивая речь»: голос громче музыки и фона (см. {@link SpeechClarity}). */
         public volatile boolean clarity = false;
     }
@@ -321,6 +323,8 @@ public final class LoudnessLeveler {
     private final double[] xs;
     private final double[] frame;
     private final SpeechClarity clarity;
+    private final VoiceIsolator isolator;
+    private boolean isolatorOn;
 
     // лимитер: задержка L, скользящий минимум по L+1, скользящее среднее по L
     private final int lookahead;
@@ -364,6 +368,7 @@ public final class LoudnessLeveler {
         xs = new double[channelCount];
         frame = new double[channelCount];
         clarity = new SpeechClarity(sampleRate, channelCount);
+        isolator = new VoiceIsolator(sampleRate, channelCount, 0);
         lookahead = Math.max(1, (int) Math.round(0.005 * sampleRate));
         yRing = new float[channelCount][lookahead];
         xRing = new float[channelCount][lookahead];
@@ -381,6 +386,9 @@ public final class LoudnessLeveler {
             java.util.Arrays.fill(xRing[c], 0);
         }
         prePos = 0;
+        if (isolator != null) {
+            isolator.clear();
+        }
         java.util.Arrays.fill(avgRing, 1);
         avgSum = lookahead;
         dqHead = 0;
@@ -502,7 +510,15 @@ public final class LoudnessLeveler {
             for (int c = 0; c < ch; c++) {
                 frame[c] = buf[base + c] / 32768.0;
             }
-            // «Ровная громкость» выключена — выключается и «Разборчивая речь»: звук как в оригинале
+            // «Ровная громкость» выключена — выключается всё остальное: звук как в оригинале
+            final boolean voiceOnly = p.enabled && p.voiceOnlyDb > 0;
+            if (voiceOnly != isolatorOn) { // включили или выключили: начинаем с чистого листа
+                isolatorOn = voiceOnly;
+                isolator.clear();
+            }
+            if (voiceOnly) {
+                isolator.process(frame, p.voiceOnlyDb);
+            }
             clarity.process(frame, p.clarity && p.enabled);
             // xs — звук на 20 мс позже, к нему и применяется усиление
             for (int c = 0; c < ch; c++) {

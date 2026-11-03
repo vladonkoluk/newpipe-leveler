@@ -67,6 +67,8 @@ public final class LevelerSettings {
     private static void apply(@NonNull final Context c, @NonNull final SharedPreferences prefs) {
         params.enabled = prefs.getBoolean(c.getString(R.string.leveler_enabled_key), true);
         params.clarity = prefs.getBoolean(c.getString(R.string.leveler_clarity_key), false);
+        params.voiceOnlyDb = number(prefs, c.getString(R.string.leveler_voice_only_key),
+                c.getString(R.string.leveler_voice_only_default));
         params.target = number(prefs, c.getString(R.string.leveler_target_key),
                 c.getString(R.string.leveler_target_default));
         final String strength = prefs.getString(c.getString(R.string.leveler_strength_key),

@@ -10,6 +10,12 @@
     <string name="leveler_status_off">Off — audio as in the original</string>
     <string name="leveler_status_active">Working: correction %1$s · %2$d Hz · channels: %3$d</string>
     <string name="leveler_status_idle">Nothing is playing now. Last correction: %1$s</string>
+    <string name="leveler_voice_only_title">Voice only</string>
+    <string name="leveler_voice_only_0">Off</string>
+    <string name="leveler_voice_only_6">Background −6 dB — slightly quieter</string>
+    <string name="leveler_voice_only_12">Background −12 dB</string>
+    <string name="leveler_voice_only_20">Background −20 dB</string>
+    <string name="leveler_voice_only_30">Background −30 dB — everything except voice to minimum</string>
     <string name="leveler_clarity_title">Clear speech</string>
     <string name="leveler_clarity_summary">Voice louder than music and background: removes rumble and bass, emphasizes speech frequencies, lowers wide stereo background</string>
     <string name="leveler_strength_title">Leveling strength</string>

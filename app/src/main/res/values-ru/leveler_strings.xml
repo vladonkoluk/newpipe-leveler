@@ -10,6 +10,12 @@
     <string name="leveler_status_off">Выключено — звук как в оригинале</string>
     <string name="leveler_status_active">Работает: поправка %1$s · %2$d Гц · каналов: %3$d</string>
     <string name="leveler_status_idle">Сейчас ничего не играет. Последняя поправка: %1$s</string>
+    <string name="leveler_voice_only_title">Только голос</string>
+    <string name="leveler_voice_only_0">Выкл</string>
+    <string name="leveler_voice_only_6">Фон −6 dB — чуть тише</string>
+    <string name="leveler_voice_only_12">Фон −12 dB</string>
+    <string name="leveler_voice_only_20">Фон −20 dB</string>
+    <string name="leveler_voice_only_30">Фон −30 dB — всё, кроме голоса, на минимум</string>
     <string name="leveler_clarity_title">Разборчивая речь</string>
     <string name="leveler_clarity_summary">Голос громче музыки и фона: убирает гул и басы, подчёркивает частоты речи, приглушает широкий стерео-фон</string>
     <string name="leveler_strength_title">Сила выравнивания</string>
