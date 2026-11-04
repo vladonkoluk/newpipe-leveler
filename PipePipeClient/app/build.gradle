@@ -30,6 +30,13 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
+
+        // PipePipe Leveler: шумоподавление RNNoise — нативный код только под ARM
+        externalNativeBuild {
+            cmake {
+                abiFilters "arm64-v8a", "armeabi-v7a"
+            }
+        }
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString()]
@@ -41,11 +48,26 @@ android {
         abi {
             reset()
             enable true
-            include "armeabi-v7a", "arm64-v8a", "x86_64", "x86"
+            // PipePipe Leveler: шумоподавление собрано только под ARM
+            include "armeabi-v7a", "arm64-v8a"
+        }
+    }
+
+    // PipePipe Leveler: RNNoise (см. src/main/cpp/RNNOISE_SOURCES.md)
+    externalNativeBuild {
+        cmake {
+            path file("src/main/cpp/CMakeLists.txt")
         }
     }
 
     signingConfigs {
+        // PipePipe Leveler: постоянный ключ из репозитория, чтобы новые сборки ставились поверх
+        leveler {
+            storeFile file("leveler.keystore")
+            storePassword "newpipe-leveler"
+            keyAlias "leveler"
+            keyPassword "newpipe-leveler"
+        }
         if (keyPath && keyStorePassword && signingKeyAlias && signingKeyPassword) {
             release {
                 storeFile file(keyPath)
@@ -74,15 +96,10 @@ android {
         }
 
         release {
-            if (signingConfigs.findByName("release")) {
-                signingConfig signingConfigs.release
-            }
-            if (System.properties.containsKey('packageSuffix')) {
-                applicationIdSuffix System.getProperty('packageSuffix')
-                resValue "string", "app_name", "PipePipe " + System.getProperty('packageSuffix')
-            } else {
-                resValue "string", "app_name", "PipePipe"
-            }
+            // PipePipe Leveler: свой ключ и отдельное приложение рядом с обычным PipePipe
+            signingConfig signingConfigs.leveler
+            applicationIdSuffix ".leveler"
+            resValue "string", "app_name", "PipePipe Leveler"
             minifyEnabled true
             shrinkResources false // disabled to fix F-Droid's reproducible build
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'

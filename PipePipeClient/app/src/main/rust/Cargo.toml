@@ -1,0 +1,13 @@
+# DeepFilterNet для NewPipe Leveler: официальная libDF (без изменений) + JNI-обвязка dfjni.
+# Происхождение и контрольные суммы — в DEEPFILTERNET_SOURCES.md.
+[workspace]
+resolver = "2"
+members = ["libDF", "dfjni"]
+
+[profile.release]
+debug = false
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = true
+# panic = "unwind" (по умолчанию): паники ловятся в JNI-функциях и не роняют приложение

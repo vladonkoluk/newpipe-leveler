@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import android.widget.Toast;
 
@@ -14,10 +16,26 @@ import androidx.preference.Preference;
 import com.google.android.material.snackbar.Snackbar;
 
 import org.schabi.newpipe.R;
+import org.schabi.newpipe.player.leveler.LevelerSettings;
 import org.schabi.newpipe.util.PermissionHelper;
 
 public class VideoAudioSettingsFragment extends BasePreferenceFragment {
     private SharedPreferences.OnSharedPreferenceChangeListener listener;
+    // строка состояния выравнивания громкости обновляется, пока экран открыт
+    private final Handler levelerStatusHandler = new Handler(Looper.getMainLooper());
+    private final Runnable levelerStatusUpdater = new Runnable() {
+        @Override
+        public void run() {
+            if (!isAdded()) {
+                return;
+            }
+            final Preference status = findPreference(getString(R.string.leveler_status_key));
+            if (status != null) {
+                status.setSummary(LevelerSettings.getStatus(requireContext()));
+            }
+            levelerStatusHandler.postDelayed(this, 500);
+        }
+    };
 
     @Override
     public void onCreatePreferences(@Nullable final Bundle savedInstanceState,
@@ -61,6 +79,7 @@ public class VideoAudioSettingsFragment extends BasePreferenceFragment {
         super.onResume();
         getPreferenceManager().getSharedPreferences()
                 .registerOnSharedPreferenceChangeListener(listener);
+        levelerStatusUpdater.run();
     }
 
     @Override
@@ -68,5 +87,6 @@ public class VideoAudioSettingsFragment extends BasePreferenceFragment {
         super.onPause();
         getPreferenceManager().getSharedPreferences()
                 .unregisterOnSharedPreferenceChangeListener(listener);
+        levelerStatusHandler.removeCallbacks(levelerStatusUpdater);
     }
 }

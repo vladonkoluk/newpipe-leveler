@@ -23,3 +23,7 @@ bin/
 *.code-workspace
 /config.py
 __pycache__
+
+# PipePipe Leveler: сборка DeepFilterNet (Rust) и её результат (собирается в CI)
+app/src/main/rust/target/
+app/src/main/jniLibs/

@@ -1,0 +1,92 @@
+# Сборка PipePipe Leveler: PipePipe + выравнивание громкости и шумоподавление.
+# APK выкладывается в релиз «pipepipe-latest»
+name: Build PipePipe Leveler
+
+on:
+  push:
+    branches:
+      - pipepipe
+  workflow_dispatch:
+
+concurrency:
+  group: build-pipepipe-leveler
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: set up JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: 25
+          distribution: "temurin"
+          cache: 'gradle'
+
+      # DeepFilterNet (Rust) -> app/src/main/jniLibs/<abi>/libdfjni.so
+      - name: Rust for Android
+        run: |
+          rustup target add aarch64-linux-android armv7-linux-androideabi
+          cargo install cargo-ndk --locked
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: PipePipeClient/app/src/main/rust
+
+      - name: Build DeepFilterNet
+        working-directory: PipePipeClient/app/src/main/rust
+        env:
+          # страницы 16 КБ — для новых телефонов на Android 15+
+          RUSTFLAGS: "-C link-arg=-Wl,-z,max-page-size=16384"
+        run: |
+          cargo ndk -t arm64-v8a -t armeabi-v7a -o ../jniLibs build --release --locked -p dfjni
+          ls -l ../jniLibs/*/
+
+      - name: Build APK
+        working-directory: PipePipeClient
+        run: ./gradlew assembleRelease --stacktrace -DskipFormatKtlint
+
+      - name: Rename APKs
+        run: |
+          ls -l PipePipeClient/app/build/outputs/apk/release/
+          cp PipePipeClient/app/build/outputs/apk/release/*-arm64-v8a-release.apk PipePipeLeveler.apk
+          cp PipePipeClient/app/build/outputs/apk/release/*-armeabi-v7a-release.apk PipePipeLeveler-armeabi-v7a.apk
+
+      - name: Check native libraries in APK
+        run: |
+          for pair in "PipePipeLeveler.apk arm64-v8a" "PipePipeLeveler-armeabi-v7a.apk armeabi-v7a"; do
+            set -- $pair
+            unzip -l "$1" | grep -E 'lib/.*\.so' | grep -E 'rnnoise|dfjni'
+            for lib in rnnoise_soft rnnoise_strong dfjni; do
+              unzip -l "$1" | grep -q "lib/$2/lib$lib.so" || { echo "нет lib/$2/lib$lib.so в $1"; exit 1; }
+            done
+          done
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: PipePipeLeveler
+          path: PipePipeLeveler*.apk
+
+      - name: Publish release "pipepipe-latest"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete pipepipe-latest --yes --cleanup-tag || true
+          gh release create pipepipe-latest PipePipeLeveler.apk PipePipeLeveler-armeabi-v7a.apk \
+            --target "$GITHUB_SHA" --latest=false \
+            --title "PipePipe Leveler 5.5.0 (${GITHUB_SHA::7})" \
+            --notes "Скачайте PipePipeLeveler.apk (для большинства телефонов, arm64) и установите. Ставится рядом с обычным PipePipe и NewPipe Leveler. Новая сборка ставится поверх старой."
+
+      - name: Test leveler
+        working-directory: PipePipeClient
+        run: >
+          ./gradlew :app:testDebugUnitTest --tests 'org.schabi.newpipe.player.leveler.*'
+          -DskipFormatKtlint --stacktrace

@@ -1,0 +1,15 @@
+[package]
+name = "dfjni"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "JNI-обвязка DeepFilterNet для NewPipe Leveler"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+deep_filter = { path = "../libDF", default-features = false, features = ["tract", "default-model"] }
+ndarray = "0.15"
+jni = "0.21"

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Выравнивание громкости (NewPipe Leveler) -->
+<resources>
+    <string name="leveler_category_title">Выравнивание громкости</string>
+    <string name="leveler_enabled_title">Ровная громкость</string>
+    <string name="leveler_enabled_summary">Тихое громче, громкое тише — как ночной режим. Работает прямо в плеере, без задержки.</string>
+    <string name="leveler_status_title">Состояние</string>
+    <string name="leveler_status_never">Звук ещё не проходил через выравнивание — включите видео</string>
+    <string name="leveler_status_unsupported">Звук идёт в формате, который выравнивание не поддерживает (%1$d)</string>
+    <string name="leveler_status_off">Выключено — звук как в оригинале</string>
+    <string name="leveler_status_active">Работает: поправка %1$s · %2$d Гц · каналов: %3$d</string>
+    <string name="leveler_status_idle">Сейчас ничего не играет. Последняя поправка: %1$s</string>
+    <string name="leveler_noise_title">Шумоподавление</string>
+    <string name="leveler_noise_off">Выкл</string>
+    <string name="leveler_noise_soft">Мягкое — шум заметно тише, голос почти не меняется</string>
+    <string name="leveler_noise_strong">Сильное — уличный шум почти до тишины, голос чуть искусственнее</string>
+    <string name="leveler_noise_dfn">DeepFilterNet — шум улицы тише и во время речи, голос чище всего; нагрузка на процессор выше. С ним «Беречь речь» лучше 30–50%</string>
+    <string name="leveler_keep_speech_title">Беречь речь</string>
+    <string name="leveler_keep_speech_0" formatted="false">Выкл — шум убирается сильнее всего, но в громком шуме пропадают куски речи</string>
+    <string name="leveler_keep_speech_30" formatted="false">Слабо — до 30%: меньше уличного шума вместе с голосом, речи может пропадать чуть больше</string>
+    <string name="leveler_keep_speech_50" formatted="false">Обычно — там, где слышна речь, возвращается до 50% оригинала</string>
+    <string name="leveler_keep_speech_70" formatted="false">Сильно — до 70%: речь почти не пропадает, шум в паузах всё равно убран</string>
+    <string name="leveler_status_noise_soft">Шумоподавление: мягкое</string>
+    <string name="leveler_status_noise_strong">Шумоподавление: сильное</string>
+    <string name="leveler_status_noise_dfn">Шумоподавление: DeepFilterNet</string>
+    <string name="leveler_status_noise_error">Шумоподавление не запустилось: %1$s</string>
+    <string name="leveler_clarity_title">Разборчивая речь</string>
+    <string name="leveler_clarity_summary">Голос громче музыки и фона: убирает гул и басы, подчёркивает частоты речи, приглушает широкий стерео-фон</string>
+    <string name="leveler_strength_title">Сила выравнивания</string>
+    <string name="leveler_target_title">Уровень громкости</string>
+    <string name="leveler_max_boost_title">Усиление тихого</string>
+    <string name="leveler_ratio_title">Сжатие внезапно громкого</string>
+
+    <string name="leveler_strength_ultra">Ультра — предельно: фон в паузах почти как голос</string>
+    <string name="leveler_strength_extreme">Экстрим — ещё ровнее, фон в паузах громче</string>
+    <string name="leveler_strength_max">Максимум — как ночной режим</string>
+    <string name="leveler_strength_100" formatted="false">100% — всё на одном уровне</string>
+    <string name="leveler_strength_80" formatted="false">80%</string>
+    <string name="leveler_strength_60" formatted="false">60%</string>
+    <string name="leveler_strength_40" formatted="false">40% — мягко</string>
+    <string name="leveler_strength_0" formatted="false">0% — только между роликами</string>
+
+    <string name="leveler_target_m20">Тише (−20 LUFS)</string>
+    <string name="leveler_target_m18">−18 LUFS</string>
+    <string name="leveler_target_m16">Обычно (−16 LUFS)</string>
+    <string name="leveler_target_m14">−14 LUFS</string>
+    <string name="leveler_target_m12">Громче (−12 LUFS)</string>
+
+    <string name="leveler_max_boost_12">До +12 dB — меньше фонового шума</string>
+    <string name="leveler_max_boost_18">До +18 dB</string>
+    <string name="leveler_max_boost_24">До +24 dB</string>
+    <string name="leveler_max_boost_30">До +30 dB — и совсем тихие ролики</string>
+
+    <string name="leveler_ratio_2">2:1 — естественно</string>
+    <string name="leveler_ratio_4">4:1 — обычно</string>
+    <string name="leveler_ratio_8">8:1 — сильно</string>
+    <string name="leveler_ratio_20">20:1 — ничего не бахнет</string>
+</resources>
